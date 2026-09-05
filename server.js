@@ -13,8 +13,9 @@ const db = require('./config/db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mahira-flowers-local-secret';
-const FALLBACK_IMAGE = '/images/logo.svg';
+const FALLBACK_IMAGE = '/images/logo.png';
 const ADMIN_WHATSAPP = '6285284589556';
+const SITE_URL = (process.env.SITE_URL || 'https://mahiraflowers.id').replace(/\/$/, '');
 
 function localizeProducts(products, lang) {
   if (lang !== 'en') return products;
@@ -146,6 +147,40 @@ app.get('/favorites', (req, res) => res.sendFile(path.join(__dirname, 'views', '
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'views', 'register.html')));
 app.get('/category/:slug', (req, res) => res.sendFile(path.join(__dirname, 'views', 'category.html')));
+
+// ==========================================
+// SEO: robots.txt & sitemap.xml (dinamis, ikut produk + kategori terbaru)
+// ==========================================
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(
+    `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/\nDisallow: /cart\nDisallow: /payment\n\nSitemap: ${SITE_URL}/sitemap.xml`
+  );
+});
+
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const staticUrls = [
+      { loc: '/', priority: '1.0' },
+      { loc: '/search', priority: '0.5' },
+      { loc: '/login', priority: '0.3' },
+      { loc: '/register', priority: '0.3' },
+    ];
+    const [categories] = await db.query('SELECT slug, created_at FROM categories');
+
+    const urlXml = (loc, lastmod, priority) => `  <url>\n    <loc>${SITE_URL}${loc}</loc>\n${lastmod ? `    <lastmod>${new Date(lastmod).toISOString()}</lastmod>\n` : ''}    <priority>${priority}</priority>\n  </url>`;
+
+    const entries = [
+      ...staticUrls.map(u => urlXml(u.loc, null, u.priority)),
+      ...categories.map(c => urlXml(`/category/${c.slug}`, c.created_at, '0.7')),
+    ];
+
+    res.type('application/xml').send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>`
+    );
+  } catch (error) {
+    res.status(500).type('text/plain').send('Gagal membuat sitemap');
+  }
+});
 
 app.get('/api/products', async (req, res) => {
   try {
@@ -705,6 +740,96 @@ app.delete('/api/admin/vouchers/:id', authenticate, requireAdmin, async (req, re
 // ==========================================
 // API ROUTES: KATEGORI & PRODUK (ADMIN ONLY)
 // ==========================================
+// ==========================================
+// AI CHATBOT (Google Gemini - free tier) - konsultasi bunga otomatis
+// ==========================================
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const chatRateLimit = new Map(); // ip -> { count, resetAt }
+
+function chatRateLimited(ip) {
+  const now = Date.now();
+  const entry = chatRateLimit.get(ip);
+  if (!entry || now > entry.resetAt) {
+    chatRateLimit.set(ip, { count: 1, resetAt: now + 60_000 });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > 15; // maks 15 pesan / menit / IP
+}
+
+app.post('/api/chatbot', async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(503).json({ success: false, message: 'Chatbot belum dikonfigurasi. Set GEMINI_API_KEY di server.' });
+  }
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  if (chatRateLimited(ip)) {
+    return res.status(429).json({ success: false, message: 'Terlalu banyak pertanyaan, coba lagi sebentar lagi ya.' });
+  }
+
+  const message = String(req.body.message || '').trim().slice(0, 800);
+  const history = Array.isArray(req.body.history) ? req.body.history.slice(-10) : [];
+  const lang = req.body.lang === 'en' ? 'en' : 'id';
+  if (!message) return res.status(400).json({ success: false, message: 'Pesan tidak boleh kosong' });
+
+  try {
+    const [categories] = await db.query('SELECT name, slug FROM categories ORDER BY name ASC');
+    const [products] = await db.query(
+      `SELECT p.name, p.price, p.badge, c.name AS category_name
+       FROM products p JOIN categories c ON c.id = p.category_id
+       WHERE p.is_active = TRUE ORDER BY p.created_at DESC LIMIT 20`
+    );
+
+    const catalogContext = [
+      `Kategori tersedia: ${categories.map(c => c.name).join(', ') || '-'}.`,
+      `Contoh produk aktif saat ini:`,
+      ...products.map(p => `- ${p.name} (${p.category_name}, Rp ${Number(p.price).toLocaleString('id-ID')}${p.badge && p.badge !== 'NONE' ? `, badge: ${p.badge}` : ''})`)
+    ].join('\n');
+
+    const systemPrompt = `Kamu adalah asisten virtual toko bunga "Mahira Flowers". Tugasmu membantu calon pembeli:
+- Merekomendasikan bunga/rangkaian sesuai suasana hati, acara, budget, atau penerima yang mereka sebutkan (mis. ulang tahun, wisuda, duka cita, permintaan maaf, anniversary, pernikahan).
+- Menjawab pertanyaan umum seputar bunga (arti bunga, cara merawat bunga potong, perbedaan jenis rangkaian, dsb).
+- Menjawab pertanyaan random pelanggan dengan ramah selama masih pantas, lalu arahkan kembali ke topik toko jika relevan.
+- HANYA merekomendasikan produk/kategori yang benar-benar ada di katalog berikut, jangan mengarang produk atau harga:
+${catalogContext}
+- Jika pelanggan ingin memesan, arahkan untuk klik produk di halaman utama / kategori terkait untuk lanjut checkout, atau hubungi admin via WhatsApp jika butuh bantuan lebih lanjut.
+- Balas dengan singkat, hangat, dan sopan (maks 4-5 kalimat). Gunakan Bahasa Indonesia jika pelanggan menulis dalam Bahasa Indonesia, atau English jika pelanggan menulis dalam English. Bahasa saat ini: ${lang === 'en' ? 'English' : 'Bahasa Indonesia'}.
+- Jangan mengarang kebijakan, harga, atau stok yang tidak ada di data di atas.`;
+
+    const geminiContents = [
+      ...history.map(h => ({ role: h.role === 'assistant' ? 'model' : 'user', parts: [{ text: h.content }] })),
+      { role: 'user', parts: [{ text: message }] }
+    ];
+
+    const geminiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: geminiContents,
+          generationConfig: { maxOutputTokens: 400, temperature: 0.7 }
+        })
+      }
+    );
+
+    const data = await geminiRes.json();
+    if (!geminiRes.ok) {
+      console.error('Gemini API error:', data);
+      return res.status(502).json({ success: false, message: 'Chatbot sedang bermasalah, coba lagi sebentar lagi ya.' });
+    }
+
+    const reply = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('\n').trim()
+      || (lang === 'en' ? 'Sorry, could you rephrase that?' : 'Maaf, boleh diulang pertanyaannya?');
+
+    res.json({ success: true, reply });
+  } catch (error) {
+    console.error('Gagal memproses chatbot:', error.message);
+    res.status(500).json({ success: false, message: 'Terjadi kesalahan pada chatbot' });
+  }
+});
+
 app.get('/api/categories', async (req, res) => {
   try {
     const [categories] = await db.query('SELECT * FROM categories ORDER BY name ASC');
@@ -735,8 +860,9 @@ app.post('/api/admin/categories', authenticate, requireAdmin, async (req, res) =
   try {
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
+    const imageUrl = String(req.body.image_url || '').trim() || null;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    await db.query('INSERT INTO categories (name, slug) VALUES (?, ?)', [name, slug]);
+    await db.query('INSERT INTO categories (name, slug, image_url) VALUES (?, ?, ?)', [name, slug, imageUrl]);
     res.status(201).json({ success: true, message: 'Kategori ditambahkan!' });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Kategori sudah ada atau tidak valid' });
@@ -747,8 +873,9 @@ app.put('/api/admin/categories/:id', authenticate, requireAdmin, async (req, res
   try {
     const name = String(req.body.name || '').trim();
     if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
+    const imageUrl = String(req.body.image_url || '').trim() || null;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    await db.query('UPDATE categories SET name = ?, slug = ? WHERE id = ?', [name, slug, req.params.id]);
+    await db.query('UPDATE categories SET name = ?, slug = ?, image_url = ? WHERE id = ?', [name, slug, imageUrl, req.params.id]);
     res.json({ success: true, message: 'Kategori diperbarui!' });
   } catch (error) {
     res.status(400).json({ success: false, message: 'Kategori sudah ada atau tidak valid' });

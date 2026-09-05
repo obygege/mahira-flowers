@@ -5,8 +5,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mahira Flowers - Elegant Flowers for Every Occasion</title>
-  <link rel="icon" type="image/svg+xml" href="/images/logo.svg">
-  <link rel="shortcut icon" href="/images/logo.svg">
+  <meta name="description" content="Mahira Flowers - toko bunga online premium. Buket bunga segar, flower box, vas bunga, hadiah & hampers, hingga rangkaian custom untuk pernikahan dan momen spesial. Pengiriman hari yang sama.">
+  <meta name="keywords" content="toko bunga online, buket bunga, flower box, kirim bunga, bunga segar, bunga pernikahan, hampers bunga, mahira flowers">
+  <meta name="author" content="Mahira Flowers">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://mahiraflowers.id/">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Mahira Flowers">
+  <meta property="og:title" content="Mahira Flowers - Elegant Flowers for Every Occasion">
+  <meta property="og:description" content="Buket bunga segar, flower box, dan rangkaian custom premium untuk setiap momen. Pesan online, kirim hari yang sama.">
+  <meta property="og:image" content="https://mahiraflowers.id/images/logo.png">
+  <meta property="og:url" content="https://mahiraflowers.id/">
+  <meta property="og:locale" content="id_ID">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mahira Flowers - Elegant Flowers for Every Occasion">
+  <meta name="twitter:description" content="Buket bunga segar, flower box, dan rangkaian custom premium untuk setiap momen.">
+  <meta name="twitter:image" content="https://mahiraflowers.id/images/logo.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FloristOrder",
+    "name": "Mahira Flowers",
+    "url": "https://mahiraflowers.id/",
+    "logo": "https://mahiraflowers.id/images/logo.png",
+    "image": "https://mahiraflowers.id/images/logo.png",
+    "description": "Toko bunga online premium - buket, flower box, dan rangkaian custom untuk setiap momen.",
+    "priceRange": "Rp",
+    "areaServed": ["Bali", "Jakarta", "Tangerang", "Depok", "Bekasi", "Cibubur"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Mahira Flowers",
+    "url": "https://mahiraflowers.id/",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://mahiraflowers.id/search?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#8a1f2b">
 
   <!-- CSS Eksternal Bawaan Anda (JANGAN DIHAPUS) -->
   <link rel="stylesheet" href="/css/style.css">
@@ -17,6 +65,8 @@
   <link rel="preload" as="image" fetchpriority="high"
     href="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&amp;fit=crop&amp;w=1400&amp;q=70">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="/css/toast.css">
+  <link rel="stylesheet" href="/css/chatbot.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,17 +92,7 @@
         <li class="nav-dropdown" id="navDropdown">
           <a href="#"><span data-i18n="nav_categories">Categories</span> <i class="fa-solid fa-chevron-down"
               style="font-size:.7rem;"></i></a>
-          <ul class="dropdown-menu">
-            <li><a href="#" data-i18n="cat_fresh">Fresh Flowers</a></li>
-            <li><a href="#" data-i18n="cat_bouquets">Bouquets</a></li>
-            <li><a href="#" data-i18n="cat_vases">Vases</a></li>
-            <li><a href="#" data-i18n="cat_box">Flower Box</a></li>
-            <li><a href="#" data-i18n="cat_gifts">Gifts &amp; Hampers</a></li>
-            <li><a href="#" data-i18n="cat_dried">Dried Flowers</a></li>
-            <li><a href="#" data-i18n="cat_occasion">Occasion</a></li>
-            <li><a href="#" data-i18n="cat_wedding">Wedding Flowers</a></li>
-            <li><a href="#" data-i18n="cat_hand">Hand Bouquet</a></li>
-            <li><a href="#" data-i18n="cat_standing">Standing Flower</a></li>
+          <ul class="dropdown-menu" id="navCategoryList">
             <li><a href="#" data-i18n="cat_products">All Products</a></li>
           </ul>
         </li>
@@ -70,9 +110,9 @@
           <button type="button" class="search-go"><i class="fa-solid fa-arrow-right"></i></button>
         </div>
       </div>
-      <div class="icon-item account-item">
-        <a class="icon-trigger" href="/login" data-action="account" aria-label="Masuk atau daftar"><i class="fa-regular fa-user"></i></a>
-        <div class="account-box">
+      <div class="icon-item account-item" id="accountItem">
+        <a class="icon-trigger" href="/login" data-action="account" aria-label="Masuk atau daftar" id="accountTrigger"><i class="fa-regular fa-user"></i></a>
+        <div class="account-box" id="accountBox">
           <p data-i18n="account_title">Masuk ke akun Anda</p>
           <input type="email" placeholder="Email" data-i18n-placeholder="account_email">
           <input type="password" placeholder="Password" data-i18n-placeholder="account_password">
@@ -158,32 +198,8 @@
       <h2 data-i18n="cat_section_title">Shop by Category</h2>
       <p data-i18n="cat_section_desc">Explore our curated collections of premium botanical designs</p>
     </div>
-    <div class="categories">
-      <div class="category">
-        <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=200&q=80"
-          alt="Fresh Flowers" loading="lazy" decoding="async">
-        <span data-i18n="cat_fresh">Fresh Flowers</span>
-      </div>
-      <div class="category">
-        <img src="https://images.unsplash.com/photo-1487070183336-b863922373d4?auto=format&fit=crop&w=200&q=80"
-          alt="Bouquets" loading="lazy" decoding="async">
-        <span data-i18n="cat_bouquets">Bouquets</span>
-      </div>
-      <div class="category">
-        <img src="https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=200&q=80"
-          alt="Vases" loading="lazy" decoding="async">
-        <span data-i18n="cat_vases">Vases</span>
-      </div>
-      <div class="category">
-        <img src="https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=200&q=80"
-          alt="Flower Box" loading="lazy" decoding="async">
-        <span data-i18n="cat_box">Flower Box</span>
-      </div>
-      <div class="category">
-        <img src="https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?auto=format&fit=crop&w=200&q=80"
-          alt="Gifts & Hampers" loading="lazy" decoding="async">
-        <span data-i18n="cat_gifts">Gifts &amp; Hampers</span>
-      </div>
+    <div class="categories" id="shopByCategoryList">
+      <!-- Diisi dinamis dari /api/categories (main.js) -->
     </div>
   </section>
 
@@ -504,7 +520,9 @@
     </div>
   </div>
 
-  <script src="/js/customer.js"></script>
+  <script src="/js/toast.js"></script>
+<script src="/js/chatbot.js"></script>
+<script src="/js/customer.js"></script>
   <script src="/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
   <script>

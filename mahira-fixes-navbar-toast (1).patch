@@ -1,0 +1,574 @@
+diff --git a/public/css/style.css b/public/css/style.css
+index fe0135c..5299b99 100644
+--- a/public/css/style.css
++++ b/public/css/style.css
+@@ -21,6 +21,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
+ .topbar{background:var(--maroon);color:#fff;font-size:.78rem;padding:.6rem 2rem;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:100;}
+ .topbar .icons{display:flex;gap:1.1rem;align-items:center;}
+ .icon-trigger{cursor:pointer;display:inline-flex;align-items:center;gap:.3rem;position:relative;transition:color .2s ease,transform .2s ease;}
++.icon-trigger.is-logged-in::after{content:'';position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:#3f9142;border:2px solid #fff;}
++.account-box .account-user-pill{display:flex;align-items:center;gap:.6rem;font-weight:600;color:var(--maroon);margin-bottom:.4rem;}
++.account-box .account-user-pill i{color:#3f9142;}
++.account-box .account-logged-links{display:flex;flex-direction:column;gap:.5rem;}
++.account-box .account-logged-links a{color:var(--maroon);}
++.account-box .account-logged-links a.logout-link{color:#c0392b;font-weight:600;}
+ .icon-trigger:hover{color:var(--coral);transform:translateY(-1px);}
+ .cart-badge,.wishlist-badge{background:var(--coral);border-radius:50%;padding:0 6px;font-size:.65rem;}
+ 
+@@ -81,7 +87,7 @@ nav.main-nav a.active{color:var(--coral);font-weight:700;}
+ 
+ /* Categories */
+ .categories{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;}
+-.category{text-align:center;}
++.category{text-align:center;display:inline-block;text-decoration:none;}
+ .category img{width:110px;height:110px;object-fit:cover;border-radius:50%;border:3px solid var(--gold);margin-bottom:.7rem;}
+ .category span{font-size:.9rem;color:var(--maroon);font-weight:600;}
+ 
+diff --git a/public/css/toast.css b/public/css/toast.css
+new file mode 100644
+index 0000000..ddab3b8
+--- /dev/null
++++ b/public/css/toast.css
+@@ -0,0 +1,65 @@
++.mahira-toast-stack {
++  position: fixed;
++  top: 20px;
++  right: 20px;
++  z-index: 99999;
++  display: flex;
++  flex-direction: column;
++  gap: 10px;
++  max-width: 360px;
++  width: calc(100% - 40px);
++  pointer-events: none;
++}
++@media (max-width: 480px) {
++  .mahira-toast-stack { top: 12px; right: 12px; left: 12px; max-width: none; width: auto; }
++}
++.mahira-toast {
++  pointer-events: auto;
++  display: flex;
++  align-items: flex-start;
++  gap: 10px;
++  background: #fff;
++  border-radius: 10px;
++  padding: 14px 16px;
++  box-shadow: 0 10px 30px rgba(30, 20, 10, .18), 0 2px 6px rgba(30, 20, 10, .08);
++  border-left: 4px solid #c9a15a;
++  font-family: 'Montserrat', system-ui, sans-serif;
++  font-size: .92rem;
++  color: #33291f;
++  transform: translateX(120%);
++  opacity: 0;
++  transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .35s ease;
++}
++.mahira-toast.show { transform: translateX(0); opacity: 1; }
++.mahira-toast.hide { transform: translateX(120%); opacity: 0; }
++.mahira-toast .mahira-toast-icon {
++  flex-shrink: 0;
++  width: 26px;
++  height: 26px;
++  border-radius: 50%;
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  font-size: .8rem;
++  color: #fff;
++  background: #c9a15a;
++}
++.mahira-toast.success { border-left-color: #3f9142; }
++.mahira-toast.success .mahira-toast-icon { background: #3f9142; }
++.mahira-toast.error { border-left-color: #c0392b; }
++.mahira-toast.error .mahira-toast-icon { background: #c0392b; }
++.mahira-toast.info { border-left-color: #2f77c9; }
++.mahira-toast.info .mahira-toast-icon { background: #2f77c9; }
++.mahira-toast.warning { border-left-color: #d68a1d; }
++.mahira-toast.warning .mahira-toast-icon { background: #d68a1d; }
++.mahira-toast-body { flex: 1; line-height: 1.4; padding-top: 2px; }
++.mahira-toast-close {
++  border: none;
++  background: none;
++  color: #9c9184;
++  cursor: pointer;
++  font-size: .85rem;
++  padding: 2px;
++  line-height: 1;
++}
++.mahira-toast-close:hover { color: #33291f; }
+diff --git a/public/js/main.js b/public/js/main.js
+index 0662e3b..3ec8c40 100644
+--- a/public/js/main.js
++++ b/public/js/main.js
+@@ -217,6 +217,36 @@ function initLanguageSwitch() {
+   window.mahiraSetLanguage = setLanguage;
+ }
+ 
++async function loadCategories() {
++  const navList = document.getElementById('navCategoryList');
++  const shopGrid = document.getElementById('shopByCategoryList');
++  if (!navList && !shopGrid) return;
++  try {
++    const res = await fetch('/api/categories');
++    const data = await res.json();
++    const categories = data.success ? data.data : [];
++
++    if (navList) {
++      const allProductsLi = navList.querySelector('li');
++      const items = categories.map(c => `<li><a href="/category/${encodeURIComponent(c.slug)}">${safeText(c.name)}</a></li>`).join('');
++      navList.innerHTML = items + (allProductsLi ? allProductsLi.outerHTML : '');
++    }
++
++    if (shopGrid) {
++      shopGrid.innerHTML = categories.map(c => `
++        <a class="category" href="/category/${encodeURIComponent(c.slug)}">
++          <img src="${safeText(c.image_url || '/images/logo.svg')}" alt="${safeText(c.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/logo.svg'">
++          <span>${safeText(c.name)}</span>
++        </a>`).join('');
++    }
++  } catch (e) {
++    console.error('Gagal memuat kategori', e);
++  }
++}
++function safeText(value) {
++  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
++}
++
+ function initCategoryDropdown() {
+   const dropdown = document.querySelector('.nav-dropdown');
+   if (!dropdown) return;
+@@ -253,6 +283,36 @@ function initCategoryDropdown() {
+   document.addEventListener('click', closeOnOutside);
+ }
+ 
++function initAccountState() {
++  const trigger = document.getElementById('accountTrigger');
++  const box = document.getElementById('accountBox');
++  if (!trigger || !box) return;
++  const token = typeof customerToken === 'function' ? customerToken() : localStorage.getItem('customer_token');
++  const user = typeof customerUser === 'function' ? customerUser() : JSON.parse(localStorage.getItem('customer_user') || 'null');
++  if (!token || !user) return; // Guest: keep the default login form as-is.
++
++  trigger.classList.add('is-logged-in');
++  trigger.setAttribute('aria-label', user.name ? `Masuk sebagai ${user.name}` : 'Sudah masuk');
++  trigger.querySelector('i')?.classList.replace('fa-regular', 'fa-solid');
++
++  const lang = curLang();
++  const name = (typeof safeText === 'function' ? safeText(user.name || '') : (user.name || ''));
++  box.innerHTML = `
++    <p class="account-user-pill"><i class="fa-solid fa-circle-check"></i> ${name || (lang === 'id' ? 'Akun Anda' : 'Your account')}</p>
++    <div class="account-logged-links">
++      <a href="/favorites">${lang === 'id' ? 'Favorit' : 'Favorites'}</a>
++      <a href="/cart">${lang === 'id' ? 'Keranjang' : 'Cart'}</a>
++      <a href="#" class="logout-link" id="accountLogoutLink">${lang === 'id' ? 'Keluar' : 'Logout'}</a>
++    </div>`;
++  document.getElementById('accountLogoutLink')?.addEventListener('click', (e) => {
++    e.preventDefault();
++    localStorage.removeItem('customer_token');
++    localStorage.removeItem('customer_user');
++    showToast(lang === 'id' ? 'Anda telah keluar.' : 'You have been logged out.', 'success');
++    setTimeout(() => location.reload(), 600);
++  });
++}
++
+ function initTopbarActions() {
+   const searchItem = document.querySelector('.search-item');
+   const accountItem = document.querySelector('.account-item');
+@@ -302,12 +362,34 @@ function initTopbarActions() {
+   searchGo?.addEventListener('click', doSearch);
+   searchInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+ 
+-  // Account login (demo)
++  // Login langsung dari navbar (dropdown akun)
+   const accountBtn = document.querySelector('.account-box .btn');
+-  accountBtn?.addEventListener('click', () => {
++  accountBtn?.addEventListener('click', async () => {
+     const lang = document.documentElement.getAttribute('lang');
+-    alert(lang === 'id' ? 'Fitur login akan segera hadir!' : 'Login feature coming soon!');
+-    accountItem.classList.remove('open');
++    const emailInput = document.querySelector('.account-box input[type="email"]');
++    const passwordInput = document.querySelector('.account-box input[type="password"]');
++    const email = emailInput?.value.trim();
++    const password = passwordInput?.value;
++    if (!email || !password) {
++      showToast(lang === 'id' ? 'Isi email dan password terlebih dahulu.' : 'Please fill in email and password.', 'warning');
++      return;
++    }
++    try {
++      const res = await fetch('/api/auth/login', {
++        method: 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify({ email, password })
++      });
++      const data = await res.json();
++      if (!res.ok || !data.success) throw new Error(data.message || (lang === 'id' ? 'Login gagal' : 'Login failed'));
++      localStorage.setItem('customer_token', data.token);
++      localStorage.setItem('customer_user', JSON.stringify(data.user));
++      showToast(lang === 'id' ? `Selamat datang kembali, ${data.user.name}!` : `Welcome back, ${data.user.name}!`, 'success');
++      accountItem.classList.remove('open');
++      setTimeout(() => location.reload(), 700);
++    } catch (err) {
++      showToast(err.message, 'error');
++    }
+   });
+ 
+   // Cart checkout (demo)
+@@ -321,8 +403,10 @@ function initTopbarActions() {
+ 
+ document.addEventListener('DOMContentLoaded', () => {
+   initLanguageSwitch();
++  loadCategories();
+   initCategoryDropdown();
+   initTopbarActions();
++  initAccountState();
+ 
+   const deliveryType = document.querySelector('#deliveryType');
+   const deliveryFields = document.querySelector('#deliveryFields');
+diff --git a/public/js/toast.js b/public/js/toast.js
+new file mode 100644
+index 0000000..4935454
+--- /dev/null
++++ b/public/js/toast.js
+@@ -0,0 +1,52 @@
++(function () {
++  function stack() {
++    let el = document.querySelector('.mahira-toast-stack');
++    if (!el) {
++      el = document.createElement('div');
++      el.className = 'mahira-toast-stack';
++      document.body.appendChild(el);
++    }
++    return el;
++  }
++
++  const icons = {
++    success: 'fa-solid fa-check',
++    error: 'fa-solid fa-xmark',
++    warning: 'fa-solid fa-triangle-exclamation',
++    info: 'fa-solid fa-bell'
++  };
++
++  function showToast(message, type = 'info', duration = 3800) {
++    if (!message) return;
++    const box = stack();
++    const toast = document.createElement('div');
++    toast.className = `mahira-toast ${type}`;
++    toast.innerHTML = `<span class="mahira-toast-icon"><i class="${icons[type] || icons.info}"></i></span><span class="mahira-toast-body"></span><button type="button" class="mahira-toast-close" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>`;
++    toast.querySelector('.mahira-toast-body').textContent = message;
++    box.appendChild(toast);
++    requestAnimationFrame(() => toast.classList.add('show'));
++
++    let timer;
++    function dismiss() {
++      clearTimeout(timer);
++      toast.classList.remove('show');
++      toast.classList.add('hide');
++      toast.addEventListener('transitionend', () => toast.remove(), { once: true });
++    }
++    toast.querySelector('.mahira-toast-close').addEventListener('click', dismiss);
++    timer = setTimeout(dismiss, duration);
++    return toast;
++  }
++
++  window.showToast = showToast;
++  // Ganti alert() bawaan browser dengan toast bergaya, tanpa perlu ubah tiap pemanggil.
++  window.alert = function (message) {
++    const text = String(message ?? '');
++    const lower = text.toLowerCase();
++    let type = 'info';
++    if (/gagal|error|tidak (valid|ditemukan|sesuai)|salah|wajib diisi/.test(lower)) type = 'error';
++    else if (/berhasil|sukses|ditambahkan|selamat/.test(lower)) type = 'success';
++    else if (/peringatan|warning|perhatian/.test(lower)) type = 'warning';
++    showToast(text, type);
++  };
++})();
+diff --git a/server.js b/server.js
+index cd4eb24..6d6aebe 100644
+--- a/server.js
++++ b/server.js
+@@ -735,8 +735,9 @@ app.post('/api/admin/categories', authenticate, requireAdmin, async (req, res) =
+   try {
+     const name = String(req.body.name || '').trim();
+     if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
++    const imageUrl = String(req.body.image_url || '').trim() || null;
+     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+-    await db.query('INSERT INTO categories (name, slug) VALUES (?, ?)', [name, slug]);
++    await db.query('INSERT INTO categories (name, slug, image_url) VALUES (?, ?, ?)', [name, slug, imageUrl]);
+     res.status(201).json({ success: true, message: 'Kategori ditambahkan!' });
+   } catch (error) {
+     res.status(400).json({ success: false, message: 'Kategori sudah ada atau tidak valid' });
+@@ -747,8 +748,9 @@ app.put('/api/admin/categories/:id', authenticate, requireAdmin, async (req, res
+   try {
+     const name = String(req.body.name || '').trim();
+     if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
++    const imageUrl = String(req.body.image_url || '').trim() || null;
+     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+-    await db.query('UPDATE categories SET name = ?, slug = ? WHERE id = ?', [name, slug, req.params.id]);
++    await db.query('UPDATE categories SET name = ?, slug = ?, image_url = ? WHERE id = ?', [name, slug, imageUrl, req.params.id]);
+     res.json({ success: true, message: 'Kategori diperbarui!' });
+   } catch (error) {
+     res.status(400).json({ success: false, message: 'Kategori sudah ada atau tidak valid' });
+diff --git a/views/admin.html b/views/admin.html
+index 2fa6ed0..291be40 100644
+--- a/views/admin.html
++++ b/views/admin.html
+@@ -8,6 +8,7 @@
+     <link rel="icon" type="image/svg+xml" href="/images/logo.svg">
+     <link rel="shortcut icon" href="/images/logo.svg">
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css">
+     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+     <style>
+         * {
+@@ -497,6 +498,9 @@
+             <form id="categoryForm">
+                 <div class="form-group"><label>Nama Kategori</label><input type="text" id="c_name" class="form-control"
+                         required placeholder="Cth: Buket Wisuda"></div>
++                <div class="form-group"><label>URL Gambar</label><input type="text" id="c_image_url" class="form-control"
++                        placeholder="https://... (opsional)"></div>
++                <div class="form-group"><img id="c_image_preview" src="" alt="" style="display:none;max-width:100%;max-height:120px;border-radius:8px;object-fit:cover;"></div>
+                 <button type="submit" class="btn btn-dark" id="categorySubmitButton">Simpan Kategori</button>
+             </form>
+         </div>
+@@ -529,6 +533,7 @@
+     </div>
+ 
+     <!-- ==================== JAVASCRIPT ==================== -->
++    <script src="/js/toast.js"></script>
+     <script>
+         let globalCategories = [];
+         let globalProducts = [];
+@@ -779,7 +784,7 @@
+             const data = await fetch(`/api/categories?_=${Date.now()}`, { cache: 'no-store' }).then(r => r.json());
+             globalCategories = data.data || [];
+             document.getElementById('categoryCount').innerText = globalCategories.length;
+-            document.getElementById('categoryList').innerHTML = globalCategories.map(category => `<div class="category-chip"><span>${escapeHtml(category.name)}</span><span class="chip-actions"><button class="icon-btn" title="Edit kategori" onclick="openCategoryModalById(${category.id})"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" title="Hapus kategori" onclick="deleteCategory(${category.id})"><i class="fa-solid fa-trash"></i></button></span></div>`).join('') || '<p class="muted">Belum ada kategori.</p>';
++            document.getElementById('categoryList').innerHTML = globalCategories.map(category => `<div class="category-chip">${category.image_url ? `<img src="${escapeHtml(category.image_url)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">` : ''}<span>${escapeHtml(category.name)}</span><span class="chip-actions"><button class="icon-btn" title="Edit kategori" onclick="openCategoryModalById(${category.id})"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" title="Hapus kategori" onclick="deleteCategory(${category.id})"><i class="fa-solid fa-trash"></i></button></span></div>`).join('') || '<p class="muted">Belum ada kategori.</p>';
+ 
+             const btnAdd = document.getElementById('btnAddProduct');
+             const selectCat = document.getElementById('p_category');
+@@ -819,6 +824,10 @@
+         function openCategoryModal(category = null) {
+             document.getElementById('c_id').value = category?.id || '';
+             document.getElementById('c_name').value = category?.name || '';
++            document.getElementById('c_image_url').value = category?.image_url || '';
++            const preview = document.getElementById('c_image_preview');
++            preview.src = category?.image_url || '';
++            preview.style.display = category?.image_url ? '' : 'none';
+             document.getElementById('categoryModalTitle').innerText = category ? 'Edit Kategori' : 'Tambah Kategori';
+             document.getElementById('categorySubmitButton').innerText = category ? 'Update Kategori' : 'Simpan Kategori';
+             openModal('categoryModal');
+@@ -852,15 +861,20 @@
+         function openProductModalById(id) { openProductModal(globalProducts.find(product => product.id === id)); }
+ 
+         // --- FITUR FORM SUBMIT ---
++        document.getElementById('c_image_url').addEventListener('input', (e) => {
++            const preview = document.getElementById('c_image_preview');
++            preview.src = e.target.value.trim();
++            preview.style.display = e.target.value.trim() ? '' : 'none';
++        });
+         document.getElementById('categoryForm').onsubmit = async (e) => {
+             e.preventDefault();
+             const categoryId = document.getElementById('c_id').value;
+             const data = await authFetch(categoryId ? `/api/admin/categories/${categoryId}` : '/api/admin/categories', {
+                 method: categoryId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
+-                body: JSON.stringify({ name: document.getElementById('c_name').value.trim() })
++                body: JSON.stringify({ name: document.getElementById('c_name').value.trim(), image_url: document.getElementById('c_image_url').value.trim() })
+             });
+             alert(data.message);
+-            if (data.success) { closeModal('categoryModal'); document.getElementById('c_name').value = ''; document.getElementById('c_id').value = ''; loadCategories(); }
++            if (data.success) { closeModal('categoryModal'); document.getElementById('c_name').value = ''; document.getElementById('c_id').value = ''; document.getElementById('c_image_url').value = ''; loadCategories(); }
+         };
+ 
+         document.getElementById('voucherModal').addEventListener('click', prepareVoucherProducts, { once: true });
+diff --git a/views/cart.html b/views/cart.html
+index 89c51c4..9af9867 100644
+--- a/views/cart.html
++++ b/views/cart.html
+@@ -1,4 +1,5 @@
+-<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Keranjang - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
++<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Keranjang - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+ <style>
+ .checkout-card{background:#fffdf8;border:1px solid var(--line);border-radius:8px;padding:24px;margin-top:24px;box-shadow:0 12px 28px rgba(58,42,42,.08)}
+ .checkout-card h2{margin-top:0;font-size:1.1rem}
+@@ -61,6 +62,7 @@
+     <p id="checkoutStatus" class="message"></p>
+   </section>
+ </main>
++<script src="/js/toast.js"></script>
+ <script src="/js/customer.js"></script>
+ <script>
+ let cartItems = [];
+diff --git a/views/category.html b/views/category.html
+index 3c543eb..b0323f6 100644
+--- a/views/category.html
++++ b/views/category.html
+@@ -4,10 +4,12 @@
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Kategori - Mahira Flowers</title>
+ <link rel="icon" type="image/svg+xml" href="/images/logo.svg"><link rel="shortcut icon" href="/images/logo.svg">
+-<link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
++<link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+ </head>
+ <body>
+ <header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a><a href="/search">Cari</a></nav></header>
+ <main class="page-shell"><a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a><div class="page-heading"><div><p class="eyebrow" data-i18n="category_eyebrow">Koleksi Mahira</p><h1 id="title">Kategori</h1><p class="muted" data-i18n="category_desc">Produk pilihan berdasarkan kategori dari katalog kami.</p></div></div><div id="results" class="product-grid"></div></main>
++<script src="/js/toast.js"></script>
+ <script src="/js/customer.js"></script><script>async function load(){const slug=location.pathname.split('/').pop();try{const r=await fetch('/api/categories/'+encodeURIComponent(slug)+'?lang='+encodeURIComponent(customerLang()));const d=await r.json();if(!r.ok)throw Error(d.message);document.title=d.category.name+' - Mahira Flowers';document.getElementById('title').textContent=d.category.name;document.getElementById('results').innerHTML=d.data.map(p=>productCard(p)).join('')||`<div class="empty">${customerTranslations[customerLang()].category_empty}</div>`}catch(e){document.getElementById('results').innerHTML='<div class="empty">'+safe(e.message)+'</div>'}}document.addEventListener('mahira-lang-changed',load);load();</script>
+ </body></html>
+diff --git a/views/favorites.html b/views/favorites.html
+index f3a996b..f0deb29 100644
+--- a/views/favorites.html
++++ b/views/favorites.html
+@@ -1 +1,3 @@
+-<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Favorit - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"></head><body><header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a></nav></header><main class="page-shell"><div class="page-heading"><div><p class="eyebrow" data-i18n="fav_eyebrow">Koleksi pribadi</p><h1 data-i18n="fav_title">Favorit Anda</h1><p class="muted" data-i18n="fav_desc">Rangkaian yang ingin Anda simpan untuk nanti.</p></div></div><div id="results" class="product-grid"></div></main><script src="/js/customer.js"></script><script>async function load(){if(!requireCustomer())return;try{const d=await customerFetch('/api/favorites?lang='+encodeURIComponent(customerLang()));document.getElementById('results').innerHTML=d.data?.map(p=>productCard(p,true)).join('')||`<div class="empty">${customerTranslations[customerLang()].fav_empty}</div>`}catch(e){document.getElementById('results').innerHTML=`<div class="empty">${safe(e.message)}</div>`}}document.addEventListener('mahira-lang-changed',load);load();</script></body></html>
++<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Favorit - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"></head><body><header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a></nav></header><main class="page-shell"><div class="page-heading"><div><p class="eyebrow" data-i18n="fav_eyebrow">Koleksi pribadi</p><h1 data-i18n="fav_title">Favorit Anda</h1><p class="muted" data-i18n="fav_desc">Rangkaian yang ingin Anda simpan untuk nanti.</p></div></div><div id="results" class="product-grid"></div></main><script src="/js/toast.js"></script>
++<script src="/js/customer.js"></script><script>async function load(){if(!requireCustomer())return;try{const d=await customerFetch('/api/favorites?lang='+encodeURIComponent(customerLang()));document.getElementById('results').innerHTML=d.data?.map(p=>productCard(p,true)).join('')||`<div class="empty">${customerTranslations[customerLang()].fav_empty}</div>`}catch(e){document.getElementById('results').innerHTML=`<div class="empty">${safe(e.message)}</div>`}}document.addEventListener('mahira-lang-changed',load);load();</script></body></html>
+diff --git a/views/index.html b/views/index.html
+index 99e3019..ebf2bd6 100644
+--- a/views/index.html
++++ b/views/index.html
+@@ -17,6 +17,7 @@
+   <link rel="preload" as="image" fetchpriority="high"
+     href="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&amp;fit=crop&amp;w=1400&amp;q=70">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css">
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+@@ -42,17 +43,7 @@
+         <li class="nav-dropdown" id="navDropdown">
+           <a href="#"><span data-i18n="nav_categories">Categories</span> <i class="fa-solid fa-chevron-down"
+               style="font-size:.7rem;"></i></a>
+-          <ul class="dropdown-menu">
+-            <li><a href="#" data-i18n="cat_fresh">Fresh Flowers</a></li>
+-            <li><a href="#" data-i18n="cat_bouquets">Bouquets</a></li>
+-            <li><a href="#" data-i18n="cat_vases">Vases</a></li>
+-            <li><a href="#" data-i18n="cat_box">Flower Box</a></li>
+-            <li><a href="#" data-i18n="cat_gifts">Gifts &amp; Hampers</a></li>
+-            <li><a href="#" data-i18n="cat_dried">Dried Flowers</a></li>
+-            <li><a href="#" data-i18n="cat_occasion">Occasion</a></li>
+-            <li><a href="#" data-i18n="cat_wedding">Wedding Flowers</a></li>
+-            <li><a href="#" data-i18n="cat_hand">Hand Bouquet</a></li>
+-            <li><a href="#" data-i18n="cat_standing">Standing Flower</a></li>
++          <ul class="dropdown-menu" id="navCategoryList">
+             <li><a href="#" data-i18n="cat_products">All Products</a></li>
+           </ul>
+         </li>
+@@ -70,9 +61,9 @@
+           <button type="button" class="search-go"><i class="fa-solid fa-arrow-right"></i></button>
+         </div>
+       </div>
+-      <div class="icon-item account-item">
+-        <a class="icon-trigger" href="/login" data-action="account" aria-label="Masuk atau daftar"><i class="fa-regular fa-user"></i></a>
+-        <div class="account-box">
++      <div class="icon-item account-item" id="accountItem">
++        <a class="icon-trigger" href="/login" data-action="account" aria-label="Masuk atau daftar" id="accountTrigger"><i class="fa-regular fa-user"></i></a>
++        <div class="account-box" id="accountBox">
+           <p data-i18n="account_title">Masuk ke akun Anda</p>
+           <input type="email" placeholder="Email" data-i18n-placeholder="account_email">
+           <input type="password" placeholder="Password" data-i18n-placeholder="account_password">
+@@ -158,32 +149,8 @@
+       <h2 data-i18n="cat_section_title">Shop by Category</h2>
+       <p data-i18n="cat_section_desc">Explore our curated collections of premium botanical designs</p>
+     </div>
+-    <div class="categories">
+-      <div class="category">
+-        <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=200&q=80"
+-          alt="Fresh Flowers" loading="lazy" decoding="async">
+-        <span data-i18n="cat_fresh">Fresh Flowers</span>
+-      </div>
+-      <div class="category">
+-        <img src="https://images.unsplash.com/photo-1487070183336-b863922373d4?auto=format&fit=crop&w=200&q=80"
+-          alt="Bouquets" loading="lazy" decoding="async">
+-        <span data-i18n="cat_bouquets">Bouquets</span>
+-      </div>
+-      <div class="category">
+-        <img src="https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=200&q=80"
+-          alt="Vases" loading="lazy" decoding="async">
+-        <span data-i18n="cat_vases">Vases</span>
+-      </div>
+-      <div class="category">
+-        <img src="https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=200&q=80"
+-          alt="Flower Box" loading="lazy" decoding="async">
+-        <span data-i18n="cat_box">Flower Box</span>
+-      </div>
+-      <div class="category">
+-        <img src="https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?auto=format&fit=crop&w=200&q=80"
+-          alt="Gifts & Hampers" loading="lazy" decoding="async">
+-        <span data-i18n="cat_gifts">Gifts &amp; Hampers</span>
+-      </div>
++    <div class="categories" id="shopByCategoryList">
++      <!-- Diisi dinamis dari /api/categories (main.js) -->
+     </div>
+   </section>
+ 
+@@ -504,7 +471,8 @@
+     </div>
+   </div>
+ 
+-  <script src="/js/customer.js"></script>
++  <script src="/js/toast.js"></script>
++<script src="/js/customer.js"></script>
+   <script src="/js/main.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+   <script>
+diff --git a/views/login.html b/views/login.html
+index 486b404..ad847bc 100644
+--- a/views/login.html
++++ b/views/login.html
+@@ -1 +1,3 @@
+-<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Masuk - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"></head><body><header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account></nav></header><main class="page-shell"><section class="form-panel"><p class="eyebrow" data-i18n="login_eyebrow">Mahira Flowers</p><h1 data-i18n="login_title">Masuk ke akun</h1><p class="muted" data-i18n="login_desc">Simpan favorit dan kelola keranjang Anda.</p><form id="authForm"><div class="form-group"><label data-i18n="login_email">Email</label><input id="email" class="form-control" type="email" required></div><div class="form-group"><label data-i18n="login_password">Password</label><input id="password" class="form-control" type="password" required></div><button class="btn btn-dark wide" data-i18n="login_btn">Masuk</button><p id="message" class="message"></p></form><p class="auth-links"><span data-i18n="login_no_account">Belum punya akun?</span> <a href="/register" data-i18n="login_register_link">Daftar sekarang</a></p></section></main><script src="/js/customer.js"></script><script>document.getElementById('authForm').addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('message');m.textContent=customerTranslations[customerLang()].login_checking;try{const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.value.trim(),password:password.value})});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'Login gagal');localStorage.setItem('customer_token',d.token);localStorage.setItem('customer_user',JSON.stringify(d.user));await mergeGuestCartIntoServer();location.href=new URLSearchParams(location.search).get('next')||'/';}catch(err){m.textContent=err.message}})</script></body></html>
++<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Masuk - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"></head><body><header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account></nav></header><main class="page-shell"><section class="form-panel"><p class="eyebrow" data-i18n="login_eyebrow">Mahira Flowers</p><h1 data-i18n="login_title">Masuk ke akun</h1><p class="muted" data-i18n="login_desc">Simpan favorit dan kelola keranjang Anda.</p><form id="authForm"><div class="form-group"><label data-i18n="login_email">Email</label><input id="email" class="form-control" type="email" required></div><div class="form-group"><label data-i18n="login_password">Password</label><input id="password" class="form-control" type="password" required></div><button class="btn btn-dark wide" data-i18n="login_btn">Masuk</button><p id="message" class="message"></p></form><p class="auth-links"><span data-i18n="login_no_account">Belum punya akun?</span> <a href="/register" data-i18n="login_register_link">Daftar sekarang</a></p></section></main><script src="/js/toast.js"></script>
++<script src="/js/customer.js"></script><script>document.getElementById('authForm').addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('message');m.textContent=customerTranslations[customerLang()].login_checking;try{const r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.value.trim(),password:password.value})});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'Login gagal');localStorage.setItem('customer_token',d.token);localStorage.setItem('customer_user',JSON.stringify(d.user));await mergeGuestCartIntoServer();location.href=new URLSearchParams(location.search).get('next')||'/';}catch(err){m.textContent=err.message}})</script></body></html>
+diff --git a/views/payment.html b/views/payment.html
+index e2e68ef..94d96d6 100644
+--- a/views/payment.html
++++ b/views/payment.html
+@@ -1,6 +1,7 @@
+ <!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pembayaran - Mahira Flowers</title>
+ <link rel="stylesheet" href="/css/customer.css">
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css">
+ <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+ <style>
+ .payment-card{max-width:420px;margin:40px auto;background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:28px;text-align:center;box-shadow:0 12px 28px rgba(58,42,42,.08)}
+@@ -33,6 +34,7 @@
+   </div>
+ </div>
+ 
++<script src="/js/toast.js"></script>
+ <script>
+ const orderNumber = location.pathname.split('/').pop();
+ const money = v => `Rp ${Number(v || 0).toLocaleString('id-ID')}`;
+diff --git a/views/register.html b/views/register.html
+index 2e6c1ea..e29f1fb 100644
+--- a/views/register.html
++++ b/views/register.html
+@@ -1 +1,3 @@
+-<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daftar - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"></head><body><header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account></nav></header><main class="page-shell"><section class="form-panel"><p class="eyebrow" data-i18n="reg_eyebrow">Mulai perjalanan Anda</p><h1 data-i18n="reg_title">Buat akun</h1><p class="muted" data-i18n="reg_desc">Gunakan akun Anda untuk menyimpan favorit dan keranjang.</p><form id="authForm"><div class="form-group"><label data-i18n="reg_name">Nama lengkap</label><input id="name" class="form-control" required></div><div class="form-group"><label data-i18n="reg_email">Email</label><input id="email" class="form-control" type="email" required></div><div class="form-group"><label data-i18n="reg_password">Password</label><input id="password" class="form-control" type="password" minlength="6" required></div><button class="btn btn-dark wide" data-i18n="reg_btn">Daftar</button><p id="message" class="message"></p></form><p class="auth-links"><span data-i18n="reg_have_account">Sudah punya akun?</span> <a href="/login" data-i18n="reg_login_link">Masuk</a></p></section></main><script src="/js/customer.js"></script><script>document.getElementById('authForm').addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('message');try{const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('name').value.trim(),email:email.value.trim(),password:password.value})});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'Pendaftaran gagal');localStorage.setItem('customer_token',d.token);localStorage.setItem('customer_user',JSON.stringify(d.user));await mergeGuestCartIntoServer();location.href=new URLSearchParams(location.search).get('next')||'/';}catch(err){m.textContent=err.message}})</script></body></html>
++<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daftar - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"></head><body><header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account></nav></header><main class="page-shell"><section class="form-panel"><p class="eyebrow" data-i18n="reg_eyebrow">Mulai perjalanan Anda</p><h1 data-i18n="reg_title">Buat akun</h1><p class="muted" data-i18n="reg_desc">Gunakan akun Anda untuk menyimpan favorit dan keranjang.</p><form id="authForm"><div class="form-group"><label data-i18n="reg_name">Nama lengkap</label><input id="name" class="form-control" required></div><div class="form-group"><label data-i18n="reg_email">Email</label><input id="email" class="form-control" type="email" required></div><div class="form-group"><label data-i18n="reg_password">Password</label><input id="password" class="form-control" type="password" minlength="6" required></div><button class="btn btn-dark wide" data-i18n="reg_btn">Daftar</button><p id="message" class="message"></p></form><p class="auth-links"><span data-i18n="reg_have_account">Sudah punya akun?</span> <a href="/login" data-i18n="reg_login_link">Masuk</a></p></section></main><script src="/js/toast.js"></script>
++<script src="/js/customer.js"></script><script>document.getElementById('authForm').addEventListener('submit',async e=>{e.preventDefault();const m=document.getElementById('message');try{const r=await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('name').value.trim(),email:email.value.trim(),password:password.value})});const d=await r.json();if(!r.ok||!d.success)throw Error(d.message||'Pendaftaran gagal');localStorage.setItem('customer_token',d.token);localStorage.setItem('customer_user',JSON.stringify(d.user));await mergeGuestCartIntoServer();location.href=new URLSearchParams(location.search).get('next')||'/';}catch(err){m.textContent=err.message}})</script></body></html>
+diff --git a/views/search.html b/views/search.html
+index 0fc932b..a6ad692 100644
+--- a/views/search.html
++++ b/views/search.html
+@@ -4,11 +4,13 @@
+ <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Cari Produk - Mahira Flowers</title>
+ <link rel="icon" type="image/svg+xml" href="/images/logo.svg"><link rel="shortcut icon" href="/images/logo.svg">
+-<link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
++<link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
++  <link rel="stylesheet" href="/css/toast.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+ </head>
+ <body>
+ <header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a></nav></header>
+ <main class="page-shell"><a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a><div class="page-heading"><div><p class="eyebrow" data-i18n="search_eyebrow">Koleksi kami</p><h1 data-i18n="search_title">Cari produk</h1><p class="muted" data-i18n="search_desc">Temukan rangkaian berdasarkan nama, kategori, atau deskripsi.</p></div></div>
+ <form id="searchForm" class="result-panel search-form"><input id="query" class="form-control" data-i18n-placeholder="search_placeholder" placeholder="Cari buket, flower box..." autofocus><button class="btn btn-dark"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search_btn">Cari</span></button></form><p id="message" class="muted"></p><div id="results" class="product-grid"></div></main>
++<script src="/js/toast.js"></script>
+ <script src="/js/customer.js"></script><script>const queryParams=new URLSearchParams(location.search);document.getElementById('query').value=queryParams.get('q')||'';async function search(){const q=document.getElementById('query').value.trim();const r=await fetch('/api/products/search?lang='+encodeURIComponent(customerLang())+'&q='+encodeURIComponent(q));const d=await r.json();const dict=customerTranslations[customerLang()];document.getElementById('message').textContent=`${d.data?.length||0} ${dict.search_count}`;document.getElementById('results').innerHTML=d.data?.map(p=>productCard(p)).join('')||`<div class="empty">${dict.search_empty}</div>`}document.getElementById('searchForm').addEventListener('submit',e=>{e.preventDefault();search()});document.addEventListener('mahira-lang-changed',search);search();</script>
+ </body></html>

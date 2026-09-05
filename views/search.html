@@ -2,13 +2,22 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cari Produk - Mahira Flowers</title>
-<link rel="icon" type="image/svg+xml" href="/images/logo.svg"><link rel="shortcut icon" href="/images/logo.svg">
-<link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<title>Cari Produk - Mahira Flowers</title><meta name="description" content="Cari produk bunga di Mahira Flowers berdasarkan nama, kategori, atau deskripsi.">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#8a1f2b">
+<link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="/css/toast.css">
+  <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 <header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a></nav></header>
 <main class="page-shell"><a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a><div class="page-heading"><div><p class="eyebrow" data-i18n="search_eyebrow">Koleksi kami</p><h1 data-i18n="search_title">Cari produk</h1><p class="muted" data-i18n="search_desc">Temukan rangkaian berdasarkan nama, kategori, atau deskripsi.</p></div></div>
 <form id="searchForm" class="result-panel search-form"><input id="query" class="form-control" data-i18n-placeholder="search_placeholder" placeholder="Cari buket, flower box..." autofocus><button class="btn btn-dark"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search_btn">Cari</span></button></form><p id="message" class="muted"></p><div id="results" class="product-grid"></div></main>
+<script src="/js/toast.js"></script>
+<script src="/js/chatbot.js"></script>
 <script src="/js/customer.js"></script><script>const queryParams=new URLSearchParams(location.search);document.getElementById('query').value=queryParams.get('q')||'';async function search(){const q=document.getElementById('query').value.trim();const r=await fetch('/api/products/search?lang='+encodeURIComponent(customerLang())+'&q='+encodeURIComponent(q));const d=await r.json();const dict=customerTranslations[customerLang()];document.getElementById('message').textContent=`${d.data?.length||0} ${dict.search_count}`;document.getElementById('results').innerHTML=d.data?.map(p=>productCard(p)).join('')||`<div class="empty">${dict.search_empty}</div>`}document.getElementById('searchForm').addEventListener('submit',e=>{e.preventDefault();search()});document.addEventListener('mahira-lang-changed',search);search();</script>
 </body></html>

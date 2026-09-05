@@ -4,10 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mahira Admin Dashboard</title>
-    <link rel="icon" type="image/svg+xml" href="/images/logo.svg">
-    <link rel="shortcut icon" href="/images/logo.svg">
+    <title>Mahira Admin Dashboard</title><meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#8a1f2b">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="/css/toast.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -428,7 +433,7 @@
                         <div class="page-heading"><div><p class="eyebrow">Pembayaran</p><h2>QRIS Statis</h2><p class="muted">Upload gambar QRIS toko. Nominal yang harus dibayar customer otomatis ditambah kode unik supaya mutasi mudah dicocokkan.</p></div></div>
                         <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
                             <div style="max-width:280px;text-align:center;">
-                                <img id="qrisPreview" src="/images/logo.svg" alt="QRIS" style="width:100%;border:1px solid #eee2c6;border-radius:10px;">
+                                <img id="qrisPreview" src="/images/logo.png" alt="QRIS" style="width:100%;border:1px solid #eee2c6;border-radius:10px;">
                                 <p class="muted" style="font-size:.8rem;margin-top:6px;">Preview QRIS saat ini</p>
                             </div>
                             <form id="qrisForm" style="flex:1;min-width:240px;">
@@ -497,6 +502,9 @@
             <form id="categoryForm">
                 <div class="form-group"><label>Nama Kategori</label><input type="text" id="c_name" class="form-control"
                         required placeholder="Cth: Buket Wisuda"></div>
+                <div class="form-group"><label>URL Gambar</label><input type="text" id="c_image_url" class="form-control"
+                        placeholder="https://... (opsional)"></div>
+                <div class="form-group"><img id="c_image_preview" src="" alt="" style="display:none;max-width:100%;max-height:120px;border-radius:8px;object-fit:cover;"></div>
                 <button type="submit" class="btn btn-dark" id="categorySubmitButton">Simpan Kategori</button>
             </form>
         </div>
@@ -529,6 +537,7 @@
     </div>
 
     <!-- ==================== JAVASCRIPT ==================== -->
+    <script src="/js/toast.js"></script>
     <script>
         let globalCategories = [];
         let globalProducts = [];
@@ -676,7 +685,7 @@
             if (!product) return;
             document.getElementById('detailContent').innerHTML = `
                 <div class="detail-heading"><div><p class="eyebrow">Detail katalog</p><h2>${escapeHtml(product.name)}</h2><p class="muted">ID produk #${product.id}</p></div><span class="${product.is_active ? 'badge-active' : 'badge-inactive'}">${product.is_active ? 'Aktif' : 'Nonaktif'}</span></div>
-                <img class="detail-image" src="${escapeHtml(product.image_url || '/images/logo.svg')}" alt="Foto ${escapeHtml(product.name)}" onerror="this.onerror=null;this.src='/images/logo.svg';">
+                <img class="detail-image" src="${escapeHtml(product.image_url || '/images/logo.png')}" alt="Foto ${escapeHtml(product.name)}" onerror="this.onerror=null;this.src='/images/logo.png';">
                 <dl class="detail-grid">
                     <div class="detail-item"><dt>Kategori</dt><dd>${detailValue(product.category_name)}</dd></div>
                     <div class="detail-item"><dt>Harga</dt><dd>${formatCurrency(product.price)}</dd></div>
@@ -779,7 +788,7 @@
             const data = await fetch(`/api/categories?_=${Date.now()}`, { cache: 'no-store' }).then(r => r.json());
             globalCategories = data.data || [];
             document.getElementById('categoryCount').innerText = globalCategories.length;
-            document.getElementById('categoryList').innerHTML = globalCategories.map(category => `<div class="category-chip"><span>${escapeHtml(category.name)}</span><span class="chip-actions"><button class="icon-btn" title="Edit kategori" onclick="openCategoryModalById(${category.id})"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" title="Hapus kategori" onclick="deleteCategory(${category.id})"><i class="fa-solid fa-trash"></i></button></span></div>`).join('') || '<p class="muted">Belum ada kategori.</p>';
+            document.getElementById('categoryList').innerHTML = globalCategories.map(category => `<div class="category-chip">${category.image_url ? `<img src="${escapeHtml(category.image_url)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">` : ''}<span>${escapeHtml(category.name)}</span><span class="chip-actions"><button class="icon-btn" title="Edit kategori" onclick="openCategoryModalById(${category.id})"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" title="Hapus kategori" onclick="deleteCategory(${category.id})"><i class="fa-solid fa-trash"></i></button></span></div>`).join('') || '<p class="muted">Belum ada kategori.</p>';
 
             const btnAdd = document.getElementById('btnAddProduct');
             const selectCat = document.getElementById('p_category');
@@ -805,7 +814,7 @@
                 data.data.forEach(p => {
                     tbody.innerHTML += `
             <tr class="clickable-row" onclick="openProductDetailsById(${p.id})">
-                            <td><img src="${p.image_url || '/images/logo.svg'}" alt="Foto ${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='/images/logo.svg';"></td>
+                            <td><img src="${p.image_url || '/images/logo.png'}" alt="Foto ${escapeHtml(p.name)}" onerror="this.onerror=null;this.src='/images/logo.png';"></td>
                             <td><b>${escapeHtml(p.name)}</b><br><small>${escapeHtml(p.category_name || '-')}</small></td>
               <td>Rp ${Number(p.price || 0).toLocaleString('id-ID')}</td>
                             <td><span class="badge" style="background:#222; color:#fff; padding:4px 8px; border-radius:4px;">${escapeHtml(p.badge)}</span></td>
@@ -819,6 +828,10 @@
         function openCategoryModal(category = null) {
             document.getElementById('c_id').value = category?.id || '';
             document.getElementById('c_name').value = category?.name || '';
+            document.getElementById('c_image_url').value = category?.image_url || '';
+            const preview = document.getElementById('c_image_preview');
+            preview.src = category?.image_url || '';
+            preview.style.display = category?.image_url ? '' : 'none';
             document.getElementById('categoryModalTitle').innerText = category ? 'Edit Kategori' : 'Tambah Kategori';
             document.getElementById('categorySubmitButton').innerText = category ? 'Update Kategori' : 'Simpan Kategori';
             openModal('categoryModal');
@@ -852,15 +865,20 @@
         function openProductModalById(id) { openProductModal(globalProducts.find(product => product.id === id)); }
 
         // --- FITUR FORM SUBMIT ---
+        document.getElementById('c_image_url').addEventListener('input', (e) => {
+            const preview = document.getElementById('c_image_preview');
+            preview.src = e.target.value.trim();
+            preview.style.display = e.target.value.trim() ? '' : 'none';
+        });
         document.getElementById('categoryForm').onsubmit = async (e) => {
             e.preventDefault();
             const categoryId = document.getElementById('c_id').value;
             const data = await authFetch(categoryId ? `/api/admin/categories/${categoryId}` : '/api/admin/categories', {
                 method: categoryId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: document.getElementById('c_name').value.trim() })
+                body: JSON.stringify({ name: document.getElementById('c_name').value.trim(), image_url: document.getElementById('c_image_url').value.trim() })
             });
             alert(data.message);
-            if (data.success) { closeModal('categoryModal'); document.getElementById('c_name').value = ''; document.getElementById('c_id').value = ''; loadCategories(); }
+            if (data.success) { closeModal('categoryModal'); document.getElementById('c_name').value = ''; document.getElementById('c_id').value = ''; document.getElementById('c_image_url').value = ''; loadCategories(); }
         };
 
         document.getElementById('voucherModal').addEventListener('click', prepareVoucherProducts, { once: true });

@@ -217,6 +217,36 @@ function initLanguageSwitch() {
   window.mahiraSetLanguage = setLanguage;
 }
 
+async function loadCategories() {
+  const navList = document.getElementById('navCategoryList');
+  const shopGrid = document.getElementById('shopByCategoryList');
+  if (!navList && !shopGrid) return;
+  try {
+    const res = await fetch('/api/categories');
+    const data = await res.json();
+    const categories = data.success ? data.data : [];
+
+    if (navList) {
+      const allProductsLi = navList.querySelector('li');
+      const items = categories.map(c => `<li><a href="/category/${encodeURIComponent(c.slug)}">${safeText(c.name)}</a></li>`).join('');
+      navList.innerHTML = items + (allProductsLi ? allProductsLi.outerHTML : '');
+    }
+
+    if (shopGrid) {
+      shopGrid.innerHTML = categories.map(c => `
+        <a class="category" href="/category/${encodeURIComponent(c.slug)}">
+          <img src="${safeText(c.image_url || '/images/logo.png')}" alt="${safeText(c.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/images/logo.png'">
+          <span>${safeText(c.name)}</span>
+        </a>`).join('');
+    }
+  } catch (e) {
+    console.error('Gagal memuat kategori', e);
+  }
+}
+function safeText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function initCategoryDropdown() {
   const dropdown = document.querySelector('.nav-dropdown');
   if (!dropdown) return;
@@ -251,6 +281,36 @@ function initCategoryDropdown() {
   }
 
   document.addEventListener('click', closeOnOutside);
+}
+
+function initAccountState() {
+  const trigger = document.getElementById('accountTrigger');
+  const box = document.getElementById('accountBox');
+  if (!trigger || !box) return;
+  const token = typeof customerToken === 'function' ? customerToken() : localStorage.getItem('customer_token');
+  const user = typeof customerUser === 'function' ? customerUser() : JSON.parse(localStorage.getItem('customer_user') || 'null');
+  if (!token || !user) return; // Guest: keep the default login form as-is.
+
+  trigger.classList.add('is-logged-in');
+  trigger.setAttribute('aria-label', user.name ? `Masuk sebagai ${user.name}` : 'Sudah masuk');
+  trigger.querySelector('i')?.classList.replace('fa-regular', 'fa-solid');
+
+  const lang = curLang();
+  const name = (typeof safeText === 'function' ? safeText(user.name || '') : (user.name || ''));
+  box.innerHTML = `
+    <p class="account-user-pill"><i class="fa-solid fa-circle-check"></i> ${name || (lang === 'id' ? 'Akun Anda' : 'Your account')}</p>
+    <div class="account-logged-links">
+      <a href="/favorites">${lang === 'id' ? 'Favorit' : 'Favorites'}</a>
+      <a href="/cart">${lang === 'id' ? 'Keranjang' : 'Cart'}</a>
+      <a href="#" class="logout-link" id="accountLogoutLink">${lang === 'id' ? 'Keluar' : 'Logout'}</a>
+    </div>`;
+  document.getElementById('accountLogoutLink')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.removeItem('customer_token');
+    localStorage.removeItem('customer_user');
+    showToast(lang === 'id' ? 'Anda telah keluar.' : 'You have been logged out.', 'success');
+    setTimeout(() => location.reload(), 600);
+  });
 }
 
 function initTopbarActions() {
@@ -302,12 +362,34 @@ function initTopbarActions() {
   searchGo?.addEventListener('click', doSearch);
   searchInput?.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 
-  // Account login (demo)
+  // Login langsung dari navbar (dropdown akun)
   const accountBtn = document.querySelector('.account-box .btn');
-  accountBtn?.addEventListener('click', () => {
+  accountBtn?.addEventListener('click', async () => {
     const lang = document.documentElement.getAttribute('lang');
-    alert(lang === 'id' ? 'Fitur login akan segera hadir!' : 'Login feature coming soon!');
-    accountItem.classList.remove('open');
+    const emailInput = document.querySelector('.account-box input[type="email"]');
+    const passwordInput = document.querySelector('.account-box input[type="password"]');
+    const email = emailInput?.value.trim();
+    const password = passwordInput?.value;
+    if (!email || !password) {
+      showToast(lang === 'id' ? 'Isi email dan password terlebih dahulu.' : 'Please fill in email and password.', 'warning');
+      return;
+    }
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || (lang === 'id' ? 'Login gagal' : 'Login failed'));
+      localStorage.setItem('customer_token', data.token);
+      localStorage.setItem('customer_user', JSON.stringify(data.user));
+      showToast(lang === 'id' ? `Selamat datang kembali, ${data.user.name}!` : `Welcome back, ${data.user.name}!`, 'success');
+      accountItem.classList.remove('open');
+      setTimeout(() => location.reload(), 700);
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
   });
 
   // Cart checkout (demo)
@@ -321,8 +403,10 @@ function initTopbarActions() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initLanguageSwitch();
+  loadCategories();
   initCategoryDropdown();
   initTopbarActions();
+  initAccountState();
 
   const deliveryType = document.querySelector('#deliveryType');
   const deliveryFields = document.querySelector('#deliveryFields');

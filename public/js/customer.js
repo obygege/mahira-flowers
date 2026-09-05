@@ -82,7 +82,7 @@ function requireCustomer() {
 function customerHeader() {
   customerLanguageSwitch();
   if (!document.querySelector('link[rel="icon"]')) {
-    const favicon = document.createElement('link'); favicon.rel = 'icon'; favicon.type = 'image/svg+xml'; favicon.href = '/images/logo.svg'; document.head.appendChild(favicon);
+    const favicon = document.createElement('link'); favicon.rel = 'icon'; favicon.type = 'image/svg+xml'; favicon.href = '/images/logo.png'; document.head.appendChild(favicon);
   }
   const main = document.querySelector('main.page-shell');
   if (main && !main.querySelector('.back-link')) {
@@ -95,7 +95,7 @@ function customerHeader() {
   document.querySelector('[data-logout]')?.addEventListener('click', e => { e.preventDefault(); localStorage.removeItem('customer_token'); localStorage.removeItem('customer_user'); location.href = '/'; });
 }
 function ratingStars(product) { const rating = Number(product.average_rating || 0); return `<div class="rating-stars" aria-label="${rating} dari 5">${[1,2,3,4,5].map(i => `<button type="button" class="rating-star ${i <= Math.round(rating) ? 'is-filled' : ''}" data-rating-product="${product.id}" data-rating-value="${i}" aria-label="${i} bintang"><i class="fa-solid fa-star"></i></button>`).join('')}<small>${rating ? rating.toFixed(1) : '0.0'} (${product.review_count || 0})</small></div>`; }
-function productCard(product, favorite = false) { return `<article class="product-card"><img src="${safe(product.image_url || '/images/logo.svg')}" alt="${safe(product.name)}" onerror="this.onerror=null;this.src='/images/logo.svg'"><div class="product-info"><h3>${safe(product.name)}</h3><p>${safe(product.description || 'Rangkaian bunga premium Mahira Flowers.')}</p><div class="price">${money(product.price)}</div>${ratingStars(product)}<div class="product-actions"><button class="btn btn-dark" data-cart="${product.id}" data-product-name="${safe(product.name)}" data-product-price="${money(product.price)}"><i class="fa-solid fa-bag-shopping"></i> <span data-customer-text="order">Pesan</span></button><button class="btn btn-light favorite-button" data-favorite="${product.id}" aria-label="Tambah ke favorit"><i class="fa-${favorite ? 'solid' : 'regular'} fa-heart"></i></button></div></div></article>`; }
+function productCard(product, favorite = false) { return `<article class="product-card"><img src="${safe(product.image_url || '/images/logo.png')}" alt="${safe(product.name)}" onerror="this.onerror=null;this.src='/images/logo.png'"><div class="product-info"><h3>${safe(product.name)}</h3><p>${safe(product.description || 'Rangkaian bunga premium Mahira Flowers.')}</p><div class="price">${money(product.price)}</div>${ratingStars(product)}<div class="product-actions"><button class="btn btn-dark" data-cart="${product.id}" data-product-name="${safe(product.name)}" data-product-price="${money(product.price)}"><i class="fa-solid fa-bag-shopping"></i> <span data-customer-text="order">Pesan</span></button><button class="btn btn-light favorite-button" data-favorite="${product.id}" aria-label="Tambah ke favorit"><i class="fa-${favorite ? 'solid' : 'regular'} fa-heart"></i></button></div></div></article>`; }
 async function addToCart(productId, productName = '', productPrice = '') {
   const target = `/?order=${encodeURIComponent(productId)}&name=${encodeURIComponent(productName)}&price=${encodeURIComponent(productPrice)}`;
   if (typeof window.openOrderModal === 'function') {

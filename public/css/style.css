@@ -21,6 +21,12 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 .topbar{background:var(--maroon);color:#fff;font-size:.78rem;padding:.6rem 2rem;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:100;}
 .topbar .icons{display:flex;gap:1.1rem;align-items:center;}
 .icon-trigger{cursor:pointer;display:inline-flex;align-items:center;gap:.3rem;position:relative;transition:color .2s ease,transform .2s ease;}
+.icon-trigger.is-logged-in::after{content:'';position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:#3f9142;border:2px solid #fff;}
+.account-box .account-user-pill{display:flex;align-items:center;gap:.6rem;font-weight:600;color:var(--maroon);margin-bottom:.4rem;}
+.account-box .account-user-pill i{color:#3f9142;}
+.account-box .account-logged-links{display:flex;flex-direction:column;gap:.5rem;}
+.account-box .account-logged-links a{color:var(--maroon);}
+.account-box .account-logged-links a.logout-link{color:#c0392b;font-weight:600;}
 .icon-trigger:hover{color:var(--coral);transform:translateY(-1px);}
 .cart-badge,.wishlist-badge{background:var(--coral);border-radius:50%;padding:0 6px;font-size:.65rem;}
 
@@ -81,7 +87,7 @@ nav.main-nav a.active{color:var(--coral);font-weight:700;}
 
 /* Categories */
 .categories{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap;}
-.category{text-align:center;}
+.category{text-align:center;display:inline-block;text-decoration:none;}
 .category img{width:110px;height:110px;object-fit:cover;border-radius:50%;border:3px solid var(--gold);margin-bottom:.7rem;}
 .category span{font-size:.9rem;color:var(--maroon);font-weight:600;}
 

@@ -1,6 +1,14 @@
-<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pembayaran - Mahira Flowers</title>
+<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pembayaran - Mahira Flowers</title><meta name="robots" content="noindex, nofollow">
 <link rel="stylesheet" href="/css/customer.css">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#8a1f2b">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="/css/toast.css">
+  <link rel="stylesheet" href="/css/chatbot.css">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
 .payment-card{max-width:420px;margin:40px auto;background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:28px;text-align:center;box-shadow:0 12px 28px rgba(58,42,42,.08)}
@@ -33,6 +41,8 @@
   </div>
 </div>
 
+<script src="/js/toast.js"></script>
+<script src="/js/chatbot.js"></script>
 <script>
 const orderNumber = location.pathname.split('/').pop();
 const money = v => `Rp ${Number(v || 0).toLocaleString('id-ID')}`;
@@ -59,7 +69,7 @@ function render(data) {
     <span class="status-pill" id="statusPill">${data.status === 'pending' ? 'Menunggu Pembayaran' : data.status}</span>
     <h2 style="margin:4px 0;">Pembayaran QRIS</h2>
     <p class="muted">Nomor pesanan: <strong>${data.order_number}</strong></p>
-    <img src="${data.qris_image || '/images/logo.svg'}" alt="QRIS Mahira Flowers">
+    <img src="${data.qris_image || '/images/logo.png'}" alt="QRIS Mahira Flowers">
     <div class="payment-amount">${money(data.payment_amount)}</div>
     <p class="payment-unique">Termasuk kode unik ${data.unique_code} — transfer harus sesuai nominal persis agar terverifikasi otomatis.</p>
     <div class="payment-actions">
