@@ -1,0 +1,114 @@
+<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pembayaran - Mahira Flowers</title>
+<link rel="stylesheet" href="/css/customer.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+.payment-card{max-width:420px;margin:40px auto;background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:28px;text-align:center;box-shadow:0 12px 28px rgba(58,42,42,.08)}
+.payment-card img{max-width:280px;width:100%;border:1px solid var(--line);border-radius:10px;margin:14px auto}
+.payment-amount{font-size:1.8rem;font-weight:700;color:var(--maroon);margin:8px 0 2px}
+.payment-unique{font-size:.85rem;color:var(--coral);font-weight:700}
+.payment-actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+.payment-note{font-size:.8rem;color:#8a7f6d;margin-top:14px}
+.status-pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;background:#fff1d6;color:#a06a1a;margin-bottom:8px}
+.success-overlay{position:fixed;inset:0;background:rgba(58,42,42,.55);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+.success-box{background:#fff;border-radius:12px;padding:32px 28px;max-width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.success-box i{font-size:2.6rem;color:#2e9e5b;margin-bottom:10px}
+.success-box h3{margin:6px 0}
+.cancel-box i{color:#c0392b !important;}
+</style>
+</head><body>
+<header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav><a href="/">Beranda</a></nav></header>
+<main class="page-shell">
+  <div class="payment-card" id="paymentCard">
+    <p class="muted">Memuat detail pembayaran...</p>
+  </div>
+</main>
+
+<div class="success-overlay" id="successOverlay">
+  <div class="success-box" id="successBox">
+    <i class="fa-solid fa-circle-check"></i>
+    <h3>Pembayaran Berhasil!</h3>
+    <p id="successMessage">Terima kasih, pesanan Anda sudah kami terima.</p>
+    <p class="muted" style="font-size:.85rem;">Anda akan diarahkan kembali ke beranda...</p>
+  </div>
+</div>
+
+<script>
+const orderNumber = location.pathname.split('/').pop();
+const money = v => `Rp ${Number(v || 0).toLocaleString('id-ID')}`;
+let pollTimer = null;
+
+async function loadPayment() {
+  try {
+    const res = await fetch(`/api/orders/${orderNumber}/payment`);
+    const result = await res.json();
+    if (!res.ok || !result.success) throw new Error(result.message || 'Pesanan tidak ditemukan');
+    render(result.data);
+    if (result.data.status !== 'pending') {
+      handleStatusChange(result.data);
+    } else {
+      pollTimer = setInterval(checkStatus, 4000);
+    }
+  } catch (error) {
+    document.getElementById('paymentCard').innerHTML = `<p class="muted">${error.message}</p>`;
+  }
+}
+
+function render(data) {
+  document.getElementById('paymentCard').innerHTML = `
+    <span class="status-pill" id="statusPill">${data.status === 'pending' ? 'Menunggu Pembayaran' : data.status}</span>
+    <h2 style="margin:4px 0;">Pembayaran QRIS</h2>
+    <p class="muted">Nomor pesanan: <strong>${data.order_number}</strong></p>
+    <img src="${data.qris_image || '/images/logo.svg'}" alt="QRIS Mahira Flowers">
+    <div class="payment-amount">${money(data.payment_amount)}</div>
+    <p class="payment-unique">Termasuk kode unik ${data.unique_code} — transfer harus sesuai nominal persis agar terverifikasi otomatis.</p>
+    <div class="payment-actions">
+      <a class="btn btn-dark" href="${data.whatsapp_url}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Konfirmasi via WhatsApp</a>
+      <a class="btn btn-light" href="/">Kembali ke beranda</a>
+    </div>
+    <p class="payment-note">Status pesanan akan diperbarui otomatis setelah admin Mahira Flowers mengonfirmasi pembayaran Anda.</p>
+  `;
+}
+
+async function checkStatus() {
+  try {
+    const res = await fetch(`/api/orders/${orderNumber}/status`);
+    const result = await res.json();
+    if (!res.ok || !result.success) return;
+    if (result.data.status !== 'pending') {
+      clearInterval(pollTimer);
+      const pill = document.getElementById('statusPill');
+      if (pill) pill.textContent = result.data.status;
+      handleStatusChange(result.data);
+    }
+  } catch (e) { /* diamkan, coba lagi di polling berikutnya */ }
+}
+
+function handleStatusChange(data) {
+  const overlay = document.getElementById('successOverlay');
+  const box = document.getElementById('successBox');
+  const icon = box.querySelector('i');
+  const title = box.querySelector('h3');
+  const message = document.getElementById('successMessage');
+
+  if (data.status === 'cancelled') {
+    box.classList.add('cancel-box');
+    icon.className = 'fa-solid fa-circle-xmark';
+    title.textContent = 'Pesanan Dibatalkan';
+    message.textContent = 'Pesanan Anda dibatalkan oleh admin. Hubungi kami via WhatsApp jika ini keliru.';
+  } else {
+    box.classList.remove('cancel-box');
+    icon.className = 'fa-solid fa-circle-check';
+    title.textContent = 'Pembayaran Berhasil!';
+    message.textContent = 'Terima kasih, pembayaran Anda sudah dikonfirmasi. Admin Mahira Flowers akan segera menghubungi Anda melalui WhatsApp yang sudah Anda cantumkan.';
+  }
+  overlay.style.display = 'flex';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    location.href = '/';
+  }, 5000);
+}
+
+loadPayment();
+</script>
+</body></html>

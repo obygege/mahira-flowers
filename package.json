@@ -1,0 +1,24 @@
+{
+  "name": "mahira-flowers",
+  "version": "1.0.0",
+  "description": "Mahira Flowers - toko bunga online",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.3.0",
+    "mysql2": "^3.24.3",
+    "nodemailer": "^10.0.0",
+    "sharp": "^0.35.4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

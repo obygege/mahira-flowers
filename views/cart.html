@@ -1,0 +1,181 @@
+<!doctype html><html lang="id"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Keranjang - Mahira Flowers</title><link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+.checkout-card{background:#fffdf8;border:1px solid var(--line);border-radius:8px;padding:24px;margin-top:24px;box-shadow:0 12px 28px rgba(58,42,42,.08)}
+.checkout-card h2{margin-top:0;font-size:1.1rem}
+.checkout-card .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.checkout-card .form-group textarea{resize:vertical}
+.voucher-row{display:flex;gap:8px}
+.voucher-row .form-control{flex:1}
+#checkoutStatus{min-height:20px}
+@media(max-width:600px){.checkout-card .form-row{grid-template-columns:1fr}}
+</style>
+</head><body><header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a></nav></header>
+<main class="page-shell">
+  <div class="page-heading"><div><p class="eyebrow" data-i18n="cart_eyebrow">Pesanan Anda</p><h1 data-i18n="cart_title">Keranjang</h1><p class="muted" data-i18n="cart_desc">Atur jumlah rangkaian sebelum melanjutkan pemesanan.</p></div></div>
+  <section class="result-panel"><div id="items"></div><div id="summary"></div></section>
+
+  <section id="checkoutCard" class="checkout-card" hidden>
+    <h2>Detail Pickup &amp; Pengiriman</h2>
+    <div class="form-group">
+      <label for="c_deliveryType">Metode pesanan</label>
+      <select id="c_deliveryType" class="form-control">
+        <option value="delivery">Pengiriman</option>
+        <option value="pickup">Pickup</option>
+      </select>
+    </div>
+    <div id="c_deliveryFields">
+      <div class="form-group">
+        <label for="c_deliveryAddress">Alamat lengkap pengiriman</label>
+        <textarea id="c_deliveryAddress" class="form-control" rows="3" placeholder="Jalan, nomor rumah, kecamatan, kota"></textarea>
+        <label for="c_mapsLink" style="margin-top:8px;">Link Google Maps <span class="muted">(opsional)</span></label>
+        <input id="c_mapsLink" type="url" class="form-control" placeholder="https://maps.google.com/...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label for="c_deliveryDate">Tanggal</label><input id="c_deliveryDate" type="date" class="form-control"></div>
+      <div class="form-group"><label for="c_timeSlot">Waktu</label>
+        <select id="c_timeSlot" class="form-control">
+          <option value="9am-2pm">09.00 - 14.00</option>
+          <option value="3pm-5pm">15.00 - 17.00</option>
+        </select>
+      </div>
+    </div>
+    <p class="muted" style="font-size:.8rem;">Pesanan di hari yang sama tersedia untuk jadwal 15.00 - 17.00. Pesanan setelah pukul 15.00 dapat diproses keesokan harinya.</p>
+    <h2>Detail Pengirim &amp; Kartu</h2>
+    <div class="form-row">
+      <div class="form-group"><label for="c_senderName">Nama pengirim</label><input id="c_senderName" class="form-control"></div>
+      <div class="form-group"><label for="c_senderPhone">Nomor telepon pengirim</label><input id="c_senderPhone" class="form-control" type="tel"></div>
+    </div>
+    <div class="form-group">
+      <label>Pesan pada kartu</label>
+      <input id="c_cardFrom" class="form-control" placeholder="Dari:" style="margin-bottom:8px;">
+      <input id="c_cardTo" class="form-control" placeholder="Untuk:" style="margin-bottom:8px;">
+      <textarea id="c_cardMessage" class="form-control" rows="3" placeholder="Pesan:"></textarea>
+    </div>
+    <div class="form-group">
+      <label for="c_voucherCode">Voucher diskon <span class="muted">(opsional)</span></label>
+      <div class="voucher-row"><input id="c_voucherCode" class="form-control" placeholder="Masukkan kode voucher"><button type="button" class="btn btn-light" id="c_voucherCheck">Pakai</button></div>
+      <p id="c_voucherMessage" class="message"></p>
+    </div>
+    <button type="button" class="btn wide" id="checkoutSubmit">Proceed to Order</button>
+    <p id="checkoutStatus" class="message"></p>
+  </section>
+</main>
+<script src="/js/customer.js"></script>
+<script>
+let cartItems = [];
+let appliedVoucher = null;
+let isGuest = false;
+
+function prefillFromDraft(){
+  try{
+    const draft = JSON.parse(localStorage.getItem('mahira_checkout_draft') || 'null');
+    if(!draft) return;
+    document.getElementById('c_deliveryType').value = draft.delivery_type || 'delivery';
+    document.getElementById('c_deliveryFields').hidden = draft.delivery_type !== 'delivery';
+    document.getElementById('c_deliveryAddress').value = draft.delivery_address || '';
+    document.getElementById('c_mapsLink').value = draft.google_maps_link || '';
+    document.getElementById('c_deliveryDate').value = draft.delivery_date || '';
+    document.getElementById('c_timeSlot').value = draft.time_slot || '9am-2pm';
+    document.getElementById('c_senderName').value = draft.sender_name || '';
+    document.getElementById('c_senderPhone').value = draft.sender_phone || '';
+    document.getElementById('c_cardFrom').value = draft.card_from || '';
+    document.getElementById('c_cardTo').value = draft.card_to || '';
+    document.getElementById('c_cardMessage').value = draft.card_message || '';
+    document.getElementById('c_voucherCode').value = draft.voucher_code || '';
+  }catch(e){/* draft rusak, abaikan */}
+}
+
+function renderCartItems(dict){
+  document.getElementById('items').innerHTML=cartItems.map(i=>`<div class="cart-row"><img src="${safe(i.image_url)}" alt="${safe(i.name)}"><div><h3>${safe(i.name)}</h3><div class="price">${money(i.price)}</div></div><div class="qty"><button data-dec="${i.product_id}">-</button><strong>${i.quantity}</strong><button data-inc="${i.product_id}">+</button></div><button class="btn btn-light" data-remove="${i.product_id}" title="Hapus"><i class="fa-solid fa-trash"></i></button></div>`).join('')||`<div class="empty">${dict.cart_empty}</div>`;
+  document.getElementById('summary').innerHTML=cartItems.length?`<div class="total-row"><span>${dict.cart_total}</span><span>${money(cartItems.reduce((s,i)=>s+Number(i.price)*i.quantity,0))}</span></div>`:'';
+  document.getElementById('checkoutCard').hidden = !cartItems.length;
+  if(cartItems.length) prefillFromDraft();
+}
+
+async function load(){
+  const dict=customerTranslations[customerLang()];
+  if(!customerToken()){
+    isGuest=true;
+    cartItems=getGuestCart();
+    renderCartItems(dict);
+    return;
+  }
+  try{
+    const d=await customerFetch('/api/cart?lang='+encodeURIComponent(customerLang()));
+    cartItems=d.data||[];
+    isGuest=false;
+    renderCartItems(dict);
+  }catch(e){document.getElementById('items').innerHTML=`<div class="empty">${safe(e.message)}</div>`}
+}
+document.addEventListener('mahira-lang-changed',load);
+
+document.addEventListener('click',async e=>{
+  const inc=e.target.closest('[data-inc]'),dec=e.target.closest('[data-dec]'),remove=e.target.closest('[data-remove]');
+  if(!inc&&!dec&&!remove)return;
+  try{
+    if(isGuest){
+      if(inc||dec){const id=(inc||dec).dataset[inc?'inc':'dec'];const row=(inc||dec).closest('.cart-row');const qty=Number(row.querySelector('strong').textContent)+(inc?1:-1);updateGuestCartQty(id,qty);}
+      if(remove){removeFromGuestCart(remove.dataset.remove);}
+      load();
+      return;
+    }
+    if(inc||dec){const id=(inc||dec).dataset[inc?'inc':'dec'];const row=(inc||dec).closest('.cart-row');const qty=Number(row.querySelector('strong').textContent)+(inc?1:-1);if(qty>0)await customerFetch('/api/cart/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({quantity:qty})});else await customerFetch('/api/cart/'+id,{method:'DELETE'});load()}
+    if(remove){await customerFetch('/api/cart/'+remove.dataset.remove,{method:'DELETE'});load()}
+  }catch(err){alert(err.message)}
+});
+
+document.getElementById('c_deliveryType').addEventListener('change', e=>{
+  document.getElementById('c_deliveryFields').hidden = e.target.value !== 'delivery';
+});
+
+document.getElementById('c_voucherCheck').addEventListener('click', async ()=>{
+  const code=document.getElementById('c_voucherCode').value.trim();
+  const message=document.getElementById('c_voucherMessage');
+  if(!code){message.textContent='Masukkan kode voucher.';return;}
+  const subtotal=cartItems.reduce((s,i)=>s+Number(i.price)*i.quantity,0);
+  try{
+    const response=await fetch('/api/vouchers/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,subtotal})});
+    const result=await response.json();
+    if(!response.ok||!result.success)throw new Error(result.message);
+    appliedVoucher=result.data;
+    message.textContent=`Voucher aktif. Hemat ${money(result.data.discount)}.`;
+  }catch(error){appliedVoucher=null;message.textContent=error.message;}
+});
+
+document.getElementById('checkoutSubmit').addEventListener('click', async function(){
+  if(!requireCustomer())return;
+  const button=this;
+  const status=document.getElementById('checkoutStatus');
+  const deliveryType=document.getElementById('c_deliveryType').value;
+  const payload={
+    delivery_type: deliveryType,
+    delivery_address: document.getElementById('c_deliveryAddress').value.trim(),
+    google_maps_link: document.getElementById('c_mapsLink').value.trim(),
+    delivery_date: document.getElementById('c_deliveryDate').value,
+    time_slot: document.getElementById('c_timeSlot').value,
+    sender_name: document.getElementById('c_senderName').value.trim(),
+    sender_phone: document.getElementById('c_senderPhone').value.trim(),
+    card_from: document.getElementById('c_cardFrom').value.trim(),
+    card_to: document.getElementById('c_cardTo').value.trim(),
+    card_message: document.getElementById('c_cardMessage').value.trim(),
+    voucher_code: appliedVoucher?.code || document.getElementById('c_voucherCode').value.trim()
+  };
+  if(!payload.delivery_date||!payload.sender_name||!payload.sender_phone||(deliveryType==='delivery'&&!payload.delivery_address)){
+    status.textContent='Mohon lengkapi data pengiriman dan data pengirim terlebih dahulu.';
+    return;
+  }
+  button.disabled=true; button.textContent='Memproses...'; status.textContent='';
+  try{
+    const result=await customerFetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    localStorage.removeItem('mahira_checkout_draft');
+    location.href = `/payment/${result.order_number}`;
+  }catch(error){
+    status.textContent=error.message;
+    button.disabled=false; button.textContent='Proceed to Order';
+  }
+});
+
+load();
+</script>
+</body></html>

@@ -1,0 +1,21 @@
+diff --git a/server.js b/server.js
+index 18604e4..ee6c31b 100644
+--- a/server.js
++++ b/server.js
+@@ -640,7 +640,7 @@ app.post('/api/orders', async (req, res) => {
+     const orderNumber = `MF-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+     const [order] = await connection.query(`
+       INSERT INTO orders (order_number, total_amount, voucher_code, discount_amount, delivery_type, delivery_address, google_maps_link, delivery_date, time_slot, sender_name, sender_phone, card_from, card_to, card_message)
+-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
++      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       [orderNumber, totalAmount, validVoucher?.code || null, discount, delivery_type, delivery_address || null, google_maps_link || null, delivery_date, time_slot, sender_name, sender_phone, card_from || null, card_to || null, card_message || null]);
+     await connection.query('INSERT INTO order_items (order_id, product_id, price, quantity) VALUES (?, ?, ?, 1)', [order.insertId, product_id, products[0].price]);
+     await connection.commit();
+@@ -654,6 +654,7 @@ app.post('/api/orders', async (req, res) => {
+     res.status(201).json({ success: true, message: 'Pesanan berhasil dikirim', order_number: orderNumber, discount, total: totalAmount, whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappText}` });
+   } catch (error) {
+     await connection.rollback();
++    console.error('Gagal menyimpan pesanan:', error);
+     res.status(500).json({ success: false, message: 'Gagal menyimpan pesanan' });
+   } finally {
+     connection.release();

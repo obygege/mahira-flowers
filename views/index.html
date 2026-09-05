@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mahira Flowers - Elegant Flowers for Every Occasion</title>
+  <link rel="icon" type="image/svg+xml" href="/images/logo.svg">
+  <link rel="shortcut icon" href="/images/logo.svg">
+
+  <!-- CSS Eksternal Bawaan Anda (JANGAN DIHAPUS) -->
+  <link rel="stylesheet" href="/css/style.css">
+
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="preload" as="image" fetchpriority="high"
+    href="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&amp;fit=crop&amp;w=1400&amp;q=70">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+</head>
+
+<body>
+
+  <header class="main-header">
+    <div class="header-top-row">
+      <button class="menu-toggle" id="mobile-menu" type="button" aria-label="Buka menu" aria-expanded="false">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="lang-switch">
+        <button type="button" class="lang-btn active" data-lang="id">ID</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </div>
+
+    <nav class="main-nav" id="nav-menu">
+      <ul>
+        <li><a href="/" class="active" data-i18n="nav_home">Home</a></li>
+        <li class="nav-dropdown" id="navDropdown">
+          <a href="#"><span data-i18n="nav_categories">Categories</span> <i class="fa-solid fa-chevron-down"
+              style="font-size:.7rem;"></i></a>
+          <ul class="dropdown-menu">
+            <li><a href="#" data-i18n="cat_fresh">Fresh Flowers</a></li>
+            <li><a href="#" data-i18n="cat_bouquets">Bouquets</a></li>
+            <li><a href="#" data-i18n="cat_vases">Vases</a></li>
+            <li><a href="#" data-i18n="cat_box">Flower Box</a></li>
+            <li><a href="#" data-i18n="cat_gifts">Gifts &amp; Hampers</a></li>
+            <li><a href="#" data-i18n="cat_dried">Dried Flowers</a></li>
+            <li><a href="#" data-i18n="cat_occasion">Occasion</a></li>
+            <li><a href="#" data-i18n="cat_wedding">Wedding Flowers</a></li>
+            <li><a href="#" data-i18n="cat_hand">Hand Bouquet</a></li>
+            <li><a href="#" data-i18n="cat_standing">Standing Flower</a></li>
+            <li><a href="#" data-i18n="cat_products">All Products</a></li>
+          </ul>
+        </li>
+        <li><a href="#customOrder" data-i18n="nav_custom">Custom Order</a></li>
+        <li><a href="#about" data-i18n="nav_about">About</a></li>
+        <li><a href="#contact" data-i18n="nav_contact">Contact</a></li>
+      </ul>
+    </nav>
+
+    <div class="icons header-actions">
+      <div class="icon-item search-item">
+        <a class="icon-trigger" href="/search" data-action="search" aria-label="Cari produk"><i class="fa-solid fa-magnifying-glass"></i></a>
+        <div class="search-box">
+          <input type="text" placeholder="Cari produk..." data-i18n-placeholder="search_placeholder">
+          <button type="button" class="search-go"><i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>
+      <div class="icon-item account-item">
+        <a class="icon-trigger" href="/login" data-action="account" aria-label="Masuk atau daftar"><i class="fa-regular fa-user"></i></a>
+        <div class="account-box">
+          <p data-i18n="account_title">Masuk ke akun Anda</p>
+          <input type="email" placeholder="Email" data-i18n-placeholder="account_email">
+          <input type="password" placeholder="Password" data-i18n-placeholder="account_password">
+          <button type="button" class="btn" data-i18n="account_login">Masuk</button>
+          <a href="/register" class="account-register-link">Belum punya akun? Daftar</a>
+        </div>
+      </div>
+        <a class="icon-trigger" href="/favorites" data-action="wishlist" aria-label="Favorit"><i class="fa-regular fa-heart"></i> <b
+          class="wishlist-badge">0</b></a>
+      <div class="icon-item cart-item">
+        <a class="icon-trigger cart-wrap" href="/cart" data-action="cart" aria-label="Keranjang"><i class="fa-solid fa-bag-shopping"></i> <b
+          class="cart-badge">0</b></a>
+        <div class="cart-box">
+          <p data-i18n="cart_title">Keranjang Anda</p>
+          <div class="cart-summary"><span data-i18n="cart_items">3 item</span></div>
+          <button type="button" class="btn" data-i18n="cart_checkout">Checkout</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="logo">
+      <img src="/images/LOGO MAHIRA FLOWERS PNG.png" alt="Mahira Flowers Logo"
+        onerror="this.src='https://via.placeholder.com/350x110?text=MAHIRA+FLOWERS'">
+    </div>
+  </header>
+
+  <div class="swiper hero-swiper">
+    <div class="swiper-wrapper">
+      <div class="swiper-slide"
+        style="background-image:url('https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1400&q=70');">
+        <div class="hero-content">
+          <h1 data-i18n="hero_title">Elegant Flowers for Every Occasion</h1>
+          <p data-i18n="hero_desc">Handcrafted luxury arrangements designed to bring the beauty of nature's finest
+            petals straight to your home.</p>
+          <button class="btn"><span data-i18n="hero_btn">Shop Now</span> <i
+              class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>
+      <div class="swiper-slide"
+        style="background-image:url('https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?auto=format&fit=crop&w=1400&q=70');">
+        <div class="hero-content">
+          <h1 data-i18n="hero_wedding_title">Exclusive Wedding Collection</h1>
+          <p data-i18n="hero_wedding_desc">Make your special day unforgettable with our bespoke wedding floral designs.
+          </p>
+          <button class="btn"><span data-i18n="hero_wedding_btn">Discover More</span> <i
+              class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>
+      <div class="swiper-slide"
+        style="background-image:url('https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=1400&q=70');">
+        <div class="hero-content">
+          <h1 data-i18n="hero_gift_title">Premium Gift Boxes</h1>
+          <p data-i18n="hero_gift_desc">Surprise your loved ones with our luxurious and long-lasting flower boxes.</p>
+          <button class="btn"><span data-i18n="hero_gift_btn">View Collection</span> <i
+              class="fa-solid fa-arrow-right"></i></button>
+        </div>
+      </div>
+    </div>
+    <div class="swiper-pagination"></div>
+    <div class="swiper-button-next"></div>
+    <div class="swiper-button-prev"></div>
+  </div>
+
+  <section class="section reveal">
+    <div class="section-header-row">
+      <div>
+        <h2 data-i18n="new_arrivals_title">New Arrivals</h2>
+        <p style="color:#8a7f6d;" data-i18n="new_arrivals_desc">Fresh and stunning floral designs newly added to our
+          collection</p>
+      </div>
+      <a href="#" class="view-all"><span data-i18n="view_all">View All</span> <i
+          class="fa-solid fa-arrow-right"></i></a>
+    </div>
+
+    <!-- CONTAINER DINAMIS UNTUK NEW ARRIVALS -->
+    <div class="products" id="new-arrivals-container">
+      <!-- Data akan dimuat dari Backend Node.js -->
+    </div>
+  </section>
+
+  <section class="section reveal">
+    <div class="section-title">
+      <h2 data-i18n="cat_section_title">Shop by Category</h2>
+      <p data-i18n="cat_section_desc">Explore our curated collections of premium botanical designs</p>
+    </div>
+    <div class="categories">
+      <div class="category">
+        <img src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=200&q=80"
+          alt="Fresh Flowers" loading="lazy" decoding="async">
+        <span data-i18n="cat_fresh">Fresh Flowers</span>
+      </div>
+      <div class="category">
+        <img src="https://images.unsplash.com/photo-1487070183336-b863922373d4?auto=format&fit=crop&w=200&q=80"
+          alt="Bouquets" loading="lazy" decoding="async">
+        <span data-i18n="cat_bouquets">Bouquets</span>
+      </div>
+      <div class="category">
+        <img src="https://images.unsplash.com/photo-1508610048659-a06b669e3321?auto=format&fit=crop&w=200&q=80"
+          alt="Vases" loading="lazy" decoding="async">
+        <span data-i18n="cat_vases">Vases</span>
+      </div>
+      <div class="category">
+        <img src="https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=200&q=80"
+          alt="Flower Box" loading="lazy" decoding="async">
+        <span data-i18n="cat_box">Flower Box</span>
+      </div>
+      <div class="category">
+        <img src="https://images.unsplash.com/photo-1519378058457-4c29a0a2efac?auto=format&fit=crop&w=200&q=80"
+          alt="Gifts & Hampers" loading="lazy" decoding="async">
+        <span data-i18n="cat_gifts">Gifts &amp; Hampers</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section reveal">
+    <div class="section-header-row">
+      <div>
+        <h2 data-i18n="bestseller_title">Our Best Sellers</h2>
+        <p style="color:#8a7f6d;" data-i18n="bestseller_desc">Our customers' absolute favorite handcrafted bouquets</p>
+      </div>
+      <a href="#" class="view-all"><span data-i18n="view_all">View All</span> <i
+          class="fa-solid fa-arrow-right"></i></a>
+    </div>
+
+    <!-- CONTAINER DINAMIS UNTUK BEST SELLERS -->
+    <div class="products" id="bestsellers-container">
+      <!-- Data akan dimuat dari Backend Node.js -->
+    </div>
+  </section>
+
+  <section class="custom-banner reveal" id="customOrder"
+    style="background-image:url('https://images.unsplash.com/photo-1595351298020-038700609878?auto=format&fit=crop&w=1400&q=70');">
+    <div class="custom-content">
+      <h2 data-i18n="custom_title">Custom Arrangements &amp; Commissions</h2>
+      <p data-i18n="custom_desc">Have a unique vision? Our master florists collaborate directly with you to craft
+        bespoke designs, grand scale arrangements, and majestic event centerpieces.</p>
+      <button class="btn" id="customOrderButton" data-i18n="custom_btn">Consult a Florist</button>
+    </div>
+  </section>
+
+  <section class="section reveal" id="about">
+    <div class="about-card">
+      <div><p class="eyebrow" data-i18n="about_eyebrow">About Mahira Flowers</p><h2 data-i18n="about_title">Flowers arranged for stories that matter</h2><p data-i18n="about_desc">We help you express your care through fresh flower arrangements, custom bouquets, and flower boxes, carefully designed by our florists.</p><a class="btn" href="#contact"><span data-i18n="about_contact_link">Contact us</span> <i class="fa-solid fa-arrow-right"></i></a></div>
+      <div class="about-facts"><div><strong>Fresh</strong><span data-i18n="about_fact_fresh">Selected flowers every day</span></div><div><strong>Custom</strong><span data-i18n="about_fact_custom">Arrangements suited to the moment</span></div><div><strong>Care</strong><span data-i18n="about_fact_care">Personal florist response</span></div></div>
+    </div>
+  </section>
+
+  <div class="features reveal" id="about-features">
+    <div class="feature">
+      <div class="icon-circle"><i class="fa-solid fa-truck-fast"></i></div>
+      <h3 data-i18n="feat1_title">Free Instant Delivery</h3>
+      <p data-i18n="feat1_desc">No fee instant delivery on local orders over Rp 1.500.000</p>
+    </div>
+    <div class="feature">
+      <div class="icon-circle"><i class="fa-solid fa-leaf"></i></div>
+      <h3 data-i18n="feat2_title">Fresh Guarantee</h3>
+      <p data-i18n="feat2_desc">Sourced daily from premium local and global growers</p>
+    </div>
+    <div class="feature">
+      <div class="icon-circle"><i class="fa-regular fa-clock"></i></div>
+      <h3 data-i18n="feat3_title">Same Day Dispatch</h3>
+      <p data-i18n="feat3_desc">Order by 2 PM for reliable same day delivery service</p>
+    </div>
+    <div class="feature">
+      <div class="icon-circle"><i class="fa-solid fa-lock"></i></div>
+      <h3 data-i18n="feat4_title">Secure Checkout</h3>
+      <p data-i18n="feat4_desc">Advanced payment processing keeping your data safe</p>
+    </div>
+  </div>
+
+  <section class="section reveal">
+    <div class="section-title">
+      <h2 data-i18n="testi_title">What Our Clients Say</h2>
+    </div>
+    <div class="testimonials">
+      <div class="testimonial">
+        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+            class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+        <p class="quote" data-i18n="quote1">"The Amour Coral Rose Bouquet was absolutely stunning! Smelt like heaven and
+          lasted for over
+          two weeks. Premium craftsmanship."</p>
+        <div class="name">Clarissa S.</div>
+        <div class="role" data-i18n="role1">Anniversary Gift</div>
+      </div>
+      <div class="testimonial">
+        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+            class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+        <p class="quote" data-i18n="quote2">"Excellent customer service! They accommodated a custom change request
+          immediately and
+          delivered on time. Mahira is the best."</p>
+        <div class="name">Garry W.</div>
+        <div class="role" data-i18n="role2">Bespoke Event Order</div>
+      </div>
+      <div class="testimonial">
+        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+            class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+        <p class="quote" data-i18n="quote3">"The vase arrangements are pure art. Every guest asked where I got them.
+          Perfect peach color
+          scheme matches my living room perfectly."</p>
+        <div class="name">Amelia R.</div>
+        <div class="role" data-i18n="role3">Weekly Subscription</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section reveal">
+    <div class="instagram-title">
+      <h2 data-i18n="insta_title">Follow Us On Instagram</h2>
+      <span>@MahiraFlowers</span>
+    </div>
+    <div class="insta-grid">
+      <img src="https://images.unsplash.com/photo-1518709268805-4e9042af2176?auto=format&fit=crop&w=300&q=80"
+        alt="insta1" loading="lazy" decoding="async">
+      <img src="https://images.unsplash.com/photo-1520763185298-1b434c919102?auto=format&fit=crop&w=300&q=80"
+        alt="insta2" loading="lazy" decoding="async">
+      <img src="https://images.unsplash.com/photo-1455659817273-f96807779a8a?auto=format&fit=crop&w=300&q=80"
+        alt="insta3" loading="lazy" decoding="async">
+      <img src="https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=300&q=80"
+        alt="insta4" loading="lazy" decoding="async">
+      <img src="https://images.unsplash.com/photo-1487070183336-b863922373d4?auto=format&fit=crop&w=300&q=80"
+        alt="insta5" loading="lazy" decoding="async">
+      <img src="https://images.unsplash.com/photo-1518895312237-a9e23508077d?auto=format&fit=crop&w=300&q=80"
+        alt="insta6" loading="lazy" decoding="async">
+    </div>
+  </section>
+
+  <footer id="contact">
+    <div class="footer-grid">
+      <div>
+        <h3 class="brand-title">MAHIRA FLOWERS</h3>
+        <p><strong>ARTIFICIAL FLOWERS &amp; DECORATION SUPPLY</strong></p>
+        <p>Importer of trusted artificial flowers with a premium collection, affordable prices, ready to ship across Indonesia.</p>
+        <div class="social-icons">
+          <a href="https://instagram.com/mahira.flowers" target="_blank" rel="noopener" aria-label="Instagram Mahira Flowers"><i class="fa-brands fa-instagram"></i></a><a href="https://wa.me/6285284589556" target="_blank" rel="noopener" aria-label="WhatsApp Mahira Flowers"><i class="fa-brands fa-whatsapp"></i></a><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener" aria-label="Google Maps Mahira Flowers"><i class="fa-solid fa-location-dot"></i></a>
+        </div>
+      </div>
+      <div>
+        <h4 data-i18n="footer_categories">CATEGORIES</h4>
+        <ul>
+          <li><a href="/search?q=artificial" data-i18n="footer_cat_artificial">Artificial Flowers</a></li>
+          <li><a href="/search?q=anggrek" data-i18n="footer_cat_orchid">Phalaenopsis K9 Orchid</a></li>
+          <li><a href="/search?q=flower+box" data-i18n="footer_cat_flowerbox">Flower Box</a></li>
+          <li><a href="/search?q=bouquet" data-i18n="footer_cat_bouquet">Bouquet</a></li>
+          <li><a href="/search" data-i18n="footer_cat_all">All Collections</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 data-i18n="footer_care">CUSTOMER CARE</h4>
+        <ul>
+          <li><a href="https://wa.me/6285284589556" target="_blank" rel="noopener" data-i18n="footer_link_admin">Contact Admin</a></li>
+          <li><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener" data-i18n="footer_link_location">Location Info</a></li>
+          <li><a href="#contact" data-i18n="footer_link_shipping">Shipping Info</a></li>
+          <li><a href="#terms" id="termsLink">Terms of Service</a></li>
+          <li><a href="#contact" data-i18n="footer_link_return">Return Policy</a></li>
+        </ul>
+      </div>
+      <div class="footer-contact">
+        <h4 data-i18n="footer_contact_title">CONTACT</h4>
+        <p><i class="fa-solid fa-location-dot"></i> Bali &amp; Jakarta surrounding area</p>
+        <p><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener"><i class="fa-solid fa-map"></i> <span data-i18n="footer_open_maps">Open address on Google Maps</span></a></p>
+        <p><a href="https://wa.me/6285284589556" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> 0852 8458 9556</a></p>
+        <p><a href="mailto:admin@mahiraflowerss.com"><i class="fa-regular fa-envelope"></i> admin@mahiraflowerss.com</a></p>
+        <p><a href="https://mahira-flowers.com" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> mahira-flowers.com</a></p>
+        <p><i class="fa-regular fa-clock"></i> <span data-i18n="footer_hours">Every day, 09.00 - 17.00</span></p>
+      </div>
+      <div>
+        <h4 data-i18n="footer_newsletter">JOIN OUR NEWSLETTER</h4>
+        <p data-i18n="newsletter_desc">Subscribe to receive discounts, floral advice, and updates.</p>
+        <div class="newsletter-form">
+          <input type="email" placeholder="Your email address" data-i18n-placeholder="newsletter_placeholder">
+          <button class="btn" type="button" id="newsletterButton" data-i18n="newsletter_btn">Subscribe</button>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span data-i18n="footer_rights">© 2026 Mahira Flowers. All Rights Reserved.</span>
+      <div class="payment-logos" aria-label="Metode pembayaran">
+        <img src="https://cdn.simpleicons.org/visa/ffffff" alt="Visa" width="48" height="30" decoding="async">
+        <img src="https://cdn.simpleicons.org/mastercard/ffffff" alt="Mastercard" width="48" height="30"
+          decoding="async">
+        <img src="https://img.icons8.com/color/48/bank-building.png" alt="Bank transfer" width="30" height="30"
+          decoding="async">
+      </div>
+    </div>
+  </footer>
+
+  <a class="whatsapp-float"
+    href="https://wa.me/6285284589556?text=Halo%20Mahira%20Flowers%2C%20saya%20ingin%20bertanya%20tentang%20produk."
+    target="_blank" rel="noopener" aria-label="Chat dengan Mahira Flowers melalui WhatsApp" title="Chat via WhatsApp">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+
+  <div id="termsModal" class="modal" aria-hidden="true">
+    <div class="modal-content terms-content">
+      <button type="button" class="close-modal" id="closeTerms" aria-label="Tutup Terms of Service">&times;</button>
+      <p class="eyebrow">Mahira Flowers</p><h2>Terms of Service</h2>
+      <div class="terms-body">
+        <h3>1. Pemesanan katalog</h3><p>Mahira Flowers adalah katalog bunga artificial dan dekorasi. Setiap request akan diverifikasi admin sebelum dibuat atau diproses.</p>
+        <h3>2. Ketersediaan dan harga</h3><p>Harga, warna, dan ketersediaan dapat berubah. Admin akan mengonfirmasi detail akhir melalui WhatsApp.</p>
+        <h3>3. Pembayaran dan pengiriman</h3><p>Detail pembayaran, jadwal, dan biaya pengiriman disepakati setelah pesanan diverifikasi.</p>
+        <h3>4. Data customer</h3><p>Data yang dikirim melalui form digunakan untuk memproses request dan menghubungi customer terkait pesanan.</p>
+        <h3>5. Voucher</h3><p>Voucher hanya berlaku sesuai periode, nilai minimum, dan produk yang ditentukan pada saat voucher dibuat.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FORM PEMESANAN POP-UP -->
+  <div id="orderModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeOrderModal()">&times;</span>
+
+      <h2 id="modalProductTitle" class="modal-title" data-i18n="modal_product">Product Name</h2>
+      <div id="modalProductPrice" class="modal-price">Rp 0</div>
+
+      <details class="form-card" open>
+        <summary data-i18n="form_delivery_title">Pickup &amp; Delivery Details</summary>
+        <div class="form-card-body">
+          <div class="form-group">
+            <label for="deliveryType" data-i18n="form_method">Order method</label>
+            <select id="deliveryType" name="delivery_type" class="form-control">
+              <option value="delivery" data-i18n="delivery">Delivery</option>
+              <option value="pickup" data-i18n="pickup">Pickup</option>
+            </select>
+            <p class="note-text" data-i18n="form_area_note">Bali &amp; Jakarta surrounding area only, including
+              Tangerang, Depok, Bekasi, and Cibubur.</p>
+          </div>
+
+          <div class="form-group delivery-fields" id="deliveryFields">
+            <label for="deliveryAddress" data-i18n="form_address">Complete delivery address</label>
+            <textarea id="deliveryAddress" class="form-control" rows="3"
+              placeholder="Street, house number, district, city" data-i18n-placeholder="address_placeholder"></textarea>
+            <label for="mapsLink" class="sub-label"><span data-i18n="form_maps">Google Maps link</span> <span
+                data-i18n="optional">(optional)</span></label>
+            <input id="mapsLink" type="url" class="form-control" placeholder="https://maps.google.com/..."
+              data-i18n-placeholder="maps_placeholder">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="deliveryDate" data-i18n="form_date">Date</label>
+              <input id="deliveryDate" type="date" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="timeSlot" data-i18n="form_time">Time</label>
+              <select id="timeSlot" name="time_slot" class="form-control">
+                <option value="9am-2pm" data-i18n="time_morning">9 AM - 2 PM</option>
+                <option value="3pm-5pm" data-i18n="time_afternoon">3 PM - 5 PM</option>
+              </select>
+            </div>
+          </div>
+          <p class="note-text" data-i18n="form_time_note">Same-day order available for the 3 PM - 5 PM slot. Orders
+            after 3 PM may be processed the next day.</p>
+        </div>
+      </details>
+
+      <details class="form-card">
+        <summary data-i18n="form_sender_title">Sender &amp; Card Details</summary>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="senderName" data-i18n="sender_name">Sender name</label>
+              <input id="senderName" type="text" class="form-control" placeholder="Sender name"
+                data-i18n-placeholder="sender_name_placeholder">
+            </div>
+            <div class="form-group">
+              <label for="senderPhone" data-i18n="sender_phone">Sender phone</label>
+              <input id="senderPhone" type="tel" class="form-control" placeholder="Sender phone"
+                data-i18n-placeholder="sender_phone_placeholder">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label data-i18n="card_message">Message on card</label>
+            <input id="cardFrom" type="text" class="form-control card-field" placeholder="From:"
+              data-i18n-placeholder="from_placeholder">
+            <input id="cardTo" type="text" class="form-control card-field" placeholder="To:" data-i18n-placeholder="to_placeholder">
+            <textarea id="cardMessage" class="form-control" rows="3" placeholder="Message:"
+              data-i18n-placeholder="message_placeholder"></textarea>
+          </div>
+        </div>
+      </details>
+
+      <div class="form-group voucher-group">
+        <label for="voucherCode"><span data-i18n="voucher_label">Discount voucher</span> <span class="optional-label" data-i18n="optional">(optional)</span></label>
+        <div class="voucher-row"><input id="voucherCode" class="form-control" placeholder="Enter voucher code" data-i18n-placeholder="voucher_placeholder"><button type="button" class="btn voucher-check" id="voucherCheckButton" data-i18n="voucher_apply">Apply</button></div>
+        <p id="voucherMessage" class="note-text"></p>
+      </div>
+
+      <button type="button" class="modal-submit" id="addToCartButton" data-i18n="add_cart">Add to Cart</button>
+
+      <div id="addedToCart" style="display:none;text-align:center;">
+        <i class="fa-solid fa-circle-check" style="font-size:2.2rem;color:#2e9e5b;margin-bottom:8px;display:block;"></i>
+        <h3 style="margin:6px 0;" data-i18n="added_title">Added to Cart</h3>
+        <p class="note-text" data-i18n="added_desc">Check your cart to adjust quantities, add more products, then checkout to continue to payment.</p>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px;">
+          <a href="/cart" class="modal-submit" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" data-i18n="view_cart_btn">View Cart</a>
+          <button type="button" class="modal-submit" id="continueShoppingButton" style="background:#fff7e8;color:#7A2E3B;" data-i18n="add_more_btn">Add Another Product</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PEMBERITAHUAN LOGIN OPSIONAL SAAT TAMBAH KE KERANJANG -->
+  <div id="loginPromptModal" class="modal">
+    <div class="modal-content" style="max-width:420px;text-align:center;">
+      <span class="close-modal" onclick="closeLoginPromptModal()">&times;</span>
+      <h2 class="modal-title" data-i18n="login_prompt_title">Save to Cart</h2>
+      <p class="note-text" data-i18n="login_prompt_desc">We recommend logging in so your cart is saved to your account. You can still continue without logging in.</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+        <button type="button" class="modal-submit" id="loginPromptYes" data-i18n="login_prompt_yes">Log In First</button>
+        <button type="button" class="modal-submit" id="loginPromptNo" style="background:#fff7e8;color:#7A2E3B;" data-i18n="login_prompt_no">Continue Without Login</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="customOrderModal" class="modal">
+    <div class="modal-content custom-order-content">
+      <span class="close-modal" id="closeCustomOrder">&times;</span>
+      <h2>Custom Order</h2><p class="note-text">Ceritakan kebutuhan rangkaian Anda. Florist kami akan menghubungi Anda untuk konfirmasi.</p>
+      <form id="customOrderForm">
+        <div class="form-row"><div class="form-group"><label for="customName">Nama</label><input id="customName" class="form-control" required></div><div class="form-group"><label for="customEmail">Email</label><input id="customEmail" type="email" class="form-control" required></div></div>
+        <div class="form-row"><div class="form-group"><label for="customPhone">Nomor telepon</label><input id="customPhone" class="form-control" required></div><div class="form-group"><label for="customCategory">Kategori</label><select id="customCategory" class="form-control" required></select></div></div>
+        <div class="form-row"><div class="form-group"><label for="customColor">Request warna</label><input id="customColor" class="form-control" placeholder="Contoh: peach dan putih"></div><div class="form-group"><label for="customLettering">Tulisan/kartu</label><input id="customLettering" class="form-control" placeholder="Tulisan yang diinginkan"></div></div>
+        <div class="form-row"><div class="form-group"><label for="customDate">Tanggal acara</label><input id="customDate" type="date" class="form-control"></div><div class="form-group"><label for="customBudget">Budget</label><input id="customBudget" type="number" class="form-control" placeholder="Rp"></div></div>
+        <div class="form-group"><label for="customMessage">Detail request</label><textarea id="customMessage" class="form-control" rows="4" placeholder="Jenis acara, ukuran, alamat, dan kebutuhan lainnya" required></textarea></div>
+        <p id="customMessageStatus" class="note-text"></p><button class="btn modal-submit" type="submit" data-i18n="custom_submit_btn">Send Custom Request</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/customer.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Swiper Setup
+      var swiper = new Swiper(".hero-swiper", {
+        navigation: {
+          nextEl: ".swiper-button-next",
+          prevEl: ".swiper-button-prev",
+        },
+        pagination: {
+          el: ".swiper-pagination",
+          clickable: true,
+        },
+        autoplay: {
+          delay: 5000,
+          disableOnInteraction: false,
+        },
+        loop: true,
+        effect: "fade",
+        on: {
+          init: function () {
+            // Loop mode clones extra slides right around init — make sure
+            // those clones also get the currently selected language.
+            if (window.mahiraSetLanguage) {
+              window.mahiraSetLanguage(localStorage.getItem('mahira-lang') || 'id');
+            }
+          }
+        }
+      });
+
+      // Menu Toggle Responsive (Mobile)
+      var menuToggle = document.getElementById("mobile-menu");
+      var navMenu = document.getElementById("nav-menu");
+      menuToggle.addEventListener("click", function () {
+        var isOpen = navMenu.classList.toggle("active");
+        menuToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      });
+
+      // ========================================================
+      // INTEGRASI API: FETCH DATA PRODUK DARI MYSQL (NODE.JS)
+      // ========================================================
+      async function fetchProducts() {
+        try {
+          // Menggunakan relative path karena API di-host di Express server yang sama
+          const response = await fetch('/api/products?lang=' + encodeURIComponent(localStorage.getItem('mahira-lang') || 'id'));
+          const result = await response.json();
+
+          if (result.success) {
+            // Pisahkan data berdasarkan badge
+            const newArrivals = [...result.data].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+            const bestSellers = result.data.filter(p => p.badge !== 'NEW' && p.badge !== 'NONE');
+
+            renderProducts(newArrivals, 'new-arrivals-container');
+            renderProducts(bestSellers, 'bestsellers-container');
+            const requestedProduct = new URLSearchParams(location.search).get('order');
+            if (requestedProduct) {
+              const product = result.data.find(item => String(item.id) === requestedProduct);
+              if (product) openOrderModal(product.id, product.name, new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumSignificantDigits: 10 }).format(product.price));
+            }
+          }
+        } catch (error) {
+          console.error("Gagal mengambil data dari server:", error);
+        }
+      }
+
+      async function loadCategoryNavigation() {
+        const menu = document.querySelector('.dropdown-menu');
+        if (!menu) return;
+        try {
+          const response = await fetch('/api/categories', { cache: 'no-store' });
+          const result = await response.json();
+          menu.innerHTML = (result.data || []).map(category => `<li><a href="/category/${encodeURIComponent(category.slug)}">${category.name}</a></li>`).join('') + '<li><a href="/search">Semua Produk</a></li>';
+        } catch (error) { console.error('Kategori gagal dimuat:', error); }
+      }
+
+      window.mahiraProductMap = window.mahiraProductMap || {};
+
+      function renderProducts(products, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        products.forEach(product => {
+          window.mahiraProductMap[product.id] = product;
+          const formattedPrice = new Intl.NumberFormat('id-ID', {
+            style: 'currency', currency: 'IDR', maximumSignificantDigits: 10
+          }).format(product.price);
+
+          const shopeeBtn = product.shopee_link
+            ? `<a href="${product.shopee_link}" target="_blank" class="btn shopee-btn">
+                 <i class="fa-solid fa-bag-shopping"></i> <span data-i18n="shopee">Shopee</span>
+               </a>`
+            : '';
+
+          let badgeStyle = "background:#222; color:#fff;";
+          if (product.badge === 'BEST SELLER' || product.badge === 'POPULAR' || product.badge === 'EXQUISITE') {
+            badgeStyle = "";
+          }
+
+          const starsHtml = ratingStars(product);
+
+          // Hindari error saat string nama produk mengandung tanda kutip
+          const safeName = product.name.replace(/'/g, "\\'");
+
+          const productHTML = `
+            <div class="product-card">
+              <div class="product-img">
+                <span class="badge" style="${badgeStyle}">${product.badge}</span>
+                <button type="button" class="heart" data-favorite="${product.id}" aria-label="Tambah ke favorit"><i class="fa-regular fa-heart"></i></button>
+                <img src="${product.image_url}" alt="${product.name}" loading="lazy" decoding="async">
+              </div>
+              <div class="product-info">
+                <h3>${product.name}</h3>
+                <div class="price">${formattedPrice}</div>
+                ${starsHtml}
+                <div class="action-buttons">
+                  <button class="btn add-cart" data-cart="${product.id}" data-product-name="${product.name.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}" data-product-price="${formattedPrice}">
+                    <i class="fa-solid fa-cart-shopping"></i> <span data-i18n="add_cart">Add to Cart</span>
+                  </button>
+                  ${shopeeBtn}
+                </div>
+              </div>
+            </div>
+          `;
+
+          container.innerHTML += productHTML;
+        });
+      }
+
+      // Panggil fungsi render dari DB saat halaman dimuat
+      fetchProducts();
+      document.addEventListener('mahira-lang-changed', fetchProducts);
+      loadCategoryNavigation();
+      const termsModal = document.getElementById('termsModal');
+      document.getElementById('termsLink')?.addEventListener('click', event => { event.preventDefault(); termsModal.style.display = 'flex'; termsModal.setAttribute('aria-hidden', 'false'); });
+      document.getElementById('closeTerms')?.addEventListener('click', () => { termsModal.style.display = 'none'; termsModal.setAttribute('aria-hidden', 'true'); });
+      termsModal?.addEventListener('click', event => { if (event.target === termsModal) { termsModal.style.display = 'none'; termsModal.setAttribute('aria-hidden', 'true'); } });
+      document.getElementById('newsletterButton')?.addEventListener('click', () => alert('Terima kasih. Newsletter Mahira Flowers akan segera hadir.'));
+      document.getElementById('customOrderButton')?.addEventListener('click', async () => {
+        const modal = document.getElementById('customOrderModal');
+        const select = document.getElementById('customCategory');
+        if (!select.options.length) {
+          const response = await fetch('/api/categories');
+          const result = await response.json();
+          select.innerHTML = (result.data || []).map(category => `<option value="${category.name}">${category.name}</option>`).join('');
+        }
+        modal.style.display = 'flex';
+      });
+      document.getElementById('closeCustomOrder')?.addEventListener('click', () => { document.getElementById('customOrderModal').style.display = 'none'; });
+      document.getElementById('customOrderForm')?.addEventListener('submit', async event => {
+        event.preventDefault();
+        const status = document.getElementById('customMessageStatus');
+        const payload = { name: customName.value.trim(), email: customEmail.value.trim(), phone: customPhone.value.trim(), category: customCategory.value, color_request: customColor.value.trim(), lettering: customLettering.value.trim(), event_date: customDate.value, budget: customBudget.value, message: customMessage.value.trim() };
+        status.textContent = dt('sending_request');
+        try {
+          const response = await fetch('/api/custom-orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const result = await response.json();
+          if (!response.ok || !result.success) throw new Error(result.message || dt('custom_failed'));
+          alert(result.message); document.getElementById('customOrderForm').reset(); document.getElementById('customOrderModal').style.display = 'none';
+        } catch (error) { status.textContent = error.message; }
+      });
+    });
+
+    // ========================================================
+    // MODAL LOGIC (TETAP DIPERTAHANKAN)
+    // ========================================================
+    var orderModal = document.getElementById("orderModal");
+    var mTitle = document.getElementById("modalProductTitle");
+    var mPrice = document.getElementById("modalProductPrice");
+    var selectedProductId = null;
+    var appliedVoucher = null;
+
+    function openOrderModal(productId, productName, productPrice) {
+      // Hapus mapping hardcode, langsung gunakan nama dari database
+      selectedProductId = productId;
+      mTitle.innerText = productName || 'Produk pilihan';
+      mPrice.innerText = productPrice;
+      appliedVoucher = null;
+      document.getElementById('voucherCode').value = '';
+      document.getElementById('voucherMessage').textContent = '';
+      document.getElementById('addedToCart').style.display = 'none';
+      document.querySelectorAll('#orderModal .form-card, #orderModal .voucher-group, #orderModal .modal-submit').forEach(el => { el.style.display = ''; });
+
+      var deliveryType = document.getElementById("deliveryType");
+      var deliveryFields = document.getElementById("deliveryFields");
+      var senderDetails = document.querySelectorAll(".form-card")[1];
+
+      if (deliveryType) deliveryType.value = "delivery";
+      if (deliveryFields) deliveryFields.hidden = false;
+      document.querySelectorAll(".form-card")[0]?.setAttribute("open", "");
+      senderDetails?.removeAttribute("open");
+
+      orderModal.style.display = "flex";
+    }
+
+    document.getElementById('voucherCheckButton')?.addEventListener('click', async () => {
+      const code = document.getElementById('voucherCode').value.trim();
+      const message = document.getElementById('voucherMessage');
+      if (!code) { message.textContent = dt('voucher_enter_code'); return; }
+      const subtotal = Number(String(mPrice.innerText).replace(/[^0-9]/g, ''));
+      try {
+        const response = await fetch('/api/vouchers/validate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, subtotal, product_id: selectedProductId }) });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message);
+        appliedVoucher = result.data; message.textContent = dt('voucher_active')(new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumSignificantDigits: 10 }).format(result.data.discount));
+      } catch (error) { appliedVoucher = null; message.textContent = error.message; }
+    });
+
+    document.getElementById('addToCartButton')?.addEventListener('click', async function () {
+      const button = this;
+      const deliveryType = document.getElementById('deliveryType').value;
+      const deliveryDetails = {
+        delivery_type: deliveryType,
+        delivery_address: document.getElementById('deliveryAddress').value.trim(),
+        google_maps_link: document.getElementById('mapsLink').value.trim(),
+        delivery_date: document.getElementById('deliveryDate').value,
+        time_slot: document.getElementById('timeSlot').value,
+        sender_name: document.getElementById('senderName').value.trim(),
+        sender_phone: document.getElementById('senderPhone').value.trim(),
+        card_from: document.getElementById('cardFrom').value.trim(),
+        card_to: document.getElementById('cardTo').value.trim(),
+        card_message: document.getElementById('cardMessage').value.trim(),
+        voucher_code: appliedVoucher?.code || document.getElementById('voucherCode').value.trim()
+      };
+      if (!selectedProductId || !deliveryDetails.delivery_date || !deliveryDetails.sender_name || !deliveryDetails.sender_phone || (deliveryType === 'delivery' && !deliveryDetails.delivery_address)) {
+        alert(dt('fill_required'));
+        return;
+      }
+      // Simpan detail pengiriman/kartu sebagai draft, dipakai untuk isi otomatis form checkout di halaman keranjang.
+      localStorage.setItem('mahira_checkout_draft', JSON.stringify(deliveryDetails));
+      if (customerToken()) {
+        await performAddToCart(button);
+      } else {
+        openLoginPromptModal();
+      }
+    });
+
+    function resetAddToCartLabel(button) {
+      button.textContent = curLang() === 'id' ? translations.id.add_cart : (button.dataset.en || 'Add to Cart');
+    }
+
+    async function performAddToCart(button) {
+      button.disabled = true;
+      button.textContent = dt('adding');
+      try {
+        const result = await customerFetch('/api/cart', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ product_id: selectedProductId, quantity: 1 }) });
+        if (!result.success) throw new Error(result.message || dt('cart_add_failed'));
+        showAddedToCart();
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        button.disabled = false;
+        resetAddToCartLabel(button);
+      }
+    }
+
+    function addGuestItemToCart() {
+      const product = window.mahiraProductMap && window.mahiraProductMap[selectedProductId];
+      const priceNum = product ? Number(product.price) : Number(String(mPrice.innerText).replace(/[^0-9]/g, ''));
+      addToGuestCart({
+        product_id: selectedProductId,
+        name: mTitle.innerText,
+        price: priceNum,
+        image_url: product ? product.image_url : '',
+        quantity: 1
+      });
+      showAddedToCart();
+    }
+
+    function openLoginPromptModal() { document.getElementById('loginPromptModal').style.display = 'flex'; }
+    function closeLoginPromptModal() { document.getElementById('loginPromptModal').style.display = 'none'; }
+    document.getElementById('loginPromptYes')?.addEventListener('click', () => {
+      closeLoginPromptModal();
+      location.href = `/login?next=${encodeURIComponent('/')}`;
+    });
+    document.getElementById('loginPromptNo')?.addEventListener('click', () => {
+      closeLoginPromptModal();
+      addGuestItemToCart();
+    });
+
+    function showAddedToCart() {
+      document.querySelectorAll('#orderModal .form-card, #orderModal .voucher-group, #orderModal .modal-submit').forEach(el => { el.style.display = 'none'; });
+      document.getElementById('addedToCart').style.display = 'block';
+    }
+
+    document.getElementById('continueShoppingButton')?.addEventListener('click', closeOrderModal);
+
+    function closeOrderModal() {
+      orderModal.style.display = "none";
+      document.getElementById('addedToCart').style.display = 'none';
+      document.querySelectorAll('#orderModal .form-card, #orderModal .voucher-group, #orderModal .modal-submit').forEach(el => { el.style.display = ''; });
+    }
+
+    window.onclick = function (event) {
+      if (event.target == orderModal) {
+        closeOrderModal();
+      }
+      if (event.target == document.getElementById('loginPromptModal')) {
+        closeLoginPromptModal();
+      }
+    }
+  </script>
+</body>
+
+</html>

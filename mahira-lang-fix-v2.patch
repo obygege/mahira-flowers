@@ -1,0 +1,167 @@
+diff --git a/public/js/main.js b/public/js/main.js
+index eb359fa..36838ac 100644
+--- a/public/js/main.js
++++ b/public/js/main.js
+@@ -110,25 +110,42 @@ const translations = {
+     sender_phone_placeholder: "Nomor telepon pengirim",
+     from_placeholder: "Dari:",
+     to_placeholder: "Untuk:",
+-    message_placeholder: "Pesan:"
++    message_placeholder: "Pesan:",
++    footer_intro: "Importir bunga artificial terpercaya dengan koleksi premium, harga terjangkau, dan siap kirim ke seluruh Indonesia.",
++    footer_cat_artificial: "Bunga Artificial",
++    footer_cat_orchid: "Anggrek Phalaenopsis K9",
++    footer_cat_flowerbox: "Flower Box",
++    footer_cat_bouquet: "Bouquet",
++    footer_cat_all: "Semua Koleksi",
++    footer_link_admin: "Hubungi Admin",
++    footer_link_location: "Info Lokasi",
++    footer_link_shipping: "Info Pengiriman",
++    footer_link_return: "Kebijakan Pengembalian",
++    footer_contact_title: "KONTAK",
++    footer_open_maps: "Buka alamat di Google Maps",
++    footer_hours: "Setiap hari, 09.00 - 17.00",
++    about_eyebrow: "Tentang Mahira Flowers",
++    about_title: "Bunga yang dirangkai untuk cerita yang berarti",
++    about_desc: "Kami membantu Anda menyampaikan perhatian melalui rangkaian bunga segar, custom bouquet, dan flower box yang dirancang dengan teliti oleh florist kami.",
++    about_contact_link: "Hubungi kami",
++    about_fact_fresh: "Bunga pilihan setiap hari",
++    about_fact_custom: "Rangkaian sesuai momen",
++    about_fact_care: "Respon florist yang personal"
+   }
+ };
+ 
+ function initLanguageSwitch() {
+   const buttons = document.querySelectorAll('.lang-btn');
+-  const i18nEls = document.querySelectorAll('[data-i18n]');
+-  const placeholderEls = document.querySelectorAll('[data-i18n-placeholder]');
+-
+-  // Cache original (English) text so we can always switch back cleanly.
+-  i18nEls.forEach(el => {
+-    if (!el.dataset.en) el.dataset.en = el.textContent;
+-  });
+-  placeholderEls.forEach(el => {
+-    if (!el.dataset.enPlaceholder) el.dataset.enPlaceholder = el.getAttribute('placeholder') || '';
+-  });
+ 
+   function setLanguage(lang) {
++    // Re-query every time (not cached once) so elements added later —
++    // e.g. Swiper's loop-mode duplicate slides, or newly rendered product
++    // cards — are always caught, not just the ones present at page load.
++    const i18nEls = document.querySelectorAll('[data-i18n]');
++    const placeholderEls = document.querySelectorAll('[data-i18n-placeholder]');
++
+     i18nEls.forEach(el => {
++      if (!el.dataset.en) el.dataset.en = el.textContent;
+       const key = el.getAttribute('data-i18n');
+       if (lang === 'id' && translations.id[key]) {
+         el.textContent = translations.id[key];
+@@ -137,6 +154,7 @@ function initLanguageSwitch() {
+       }
+     });
+     placeholderEls.forEach(el => {
++      if (!el.dataset.enPlaceholder) el.dataset.enPlaceholder = el.getAttribute('placeholder') || '';
+       const key = el.getAttribute('data-i18n-placeholder');
+       if (lang === 'id' && translations.id[key]) {
+         el.setAttribute('placeholder', translations.id[key]);
+@@ -154,8 +172,14 @@ function initLanguageSwitch() {
+     btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
+   });
+ 
++  // Swiper (loop:true) builds its duplicate slides asynchronously right
++  // after init, so re-apply the language shortly after load to make sure
++  // those clones pick up the correct text too.
+   const savedLang = localStorage.getItem('mahira-lang') || 'id';
+   setLanguage(savedLang);
++  setTimeout(() => setLanguage(localStorage.getItem('mahira-lang') || 'id'), 300);
++
++  window.mahiraSetLanguage = setLanguage;
+ }
+ 
+ function initCategoryDropdown() {
+diff --git a/views/index.html b/views/index.html
+index bf49e3f..4492415 100644
+--- a/views/index.html
++++ b/views/index.html
+@@ -215,8 +215,8 @@
+ 
+   <section class="section reveal" id="about">
+     <div class="about-card">
+-      <div><p class="eyebrow">Tentang Mahira Flowers</p><h2>Bunga yang dirangkai untuk cerita yang berarti</h2><p>Kami membantu Anda menyampaikan perhatian melalui rangkaian bunga segar, custom bouquet, dan flower box yang dirancang dengan teliti oleh florist kami.</p><a class="btn" href="#contact">Hubungi kami <i class="fa-solid fa-arrow-right"></i></a></div>
+-      <div class="about-facts"><div><strong>Fresh</strong><span>Bunga pilihan setiap hari</span></div><div><strong>Custom</strong><span>Rangkaian sesuai momen</span></div><div><strong>Care</strong><span>Respon florist yang personal</span></div></div>
++      <div><p class="eyebrow" data-i18n="about_eyebrow">About Mahira Flowers</p><h2 data-i18n="about_title">Flowers arranged for stories that matter</h2><p data-i18n="about_desc">We help you express your care through fresh flower arrangements, custom bouquets, and flower boxes, carefully designed by our florists.</p><a class="btn" href="#contact"><span data-i18n="about_contact_link">Contact us</span> <i class="fa-solid fa-arrow-right"></i></a></div>
++      <div class="about-facts"><div><strong>Fresh</strong><span data-i18n="about_fact_fresh">Selected flowers every day</span></div><div><strong>Custom</strong><span data-i18n="about_fact_custom">Arrangements suited to the moment</span></div><div><strong>Care</strong><span data-i18n="about_fact_care">Personal florist response</span></div></div>
+     </div>
+   </section>
+ 
+@@ -304,7 +304,7 @@
+       <div>
+         <h3 class="brand-title">MAHIRA FLOWERS</h3>
+         <p><strong>ARTIFICIAL FLOWERS &amp; DECORATION SUPPLY</strong></p>
+-        <p>Importir bunga artificial terpercaya dengan koleksi premium, harga terjangkau, dan siap kirim ke seluruh Indonesia.</p>
++        <p>Importer of trusted artificial flowers with a premium collection, affordable prices, ready to ship across Indonesia.</p>
+         <div class="social-icons">
+           <a href="https://instagram.com/mahira.flowers" target="_blank" rel="noopener" aria-label="Instagram Mahira Flowers"><i class="fa-brands fa-instagram"></i></a><a href="https://wa.me/6285284589556" target="_blank" rel="noopener" aria-label="WhatsApp Mahira Flowers"><i class="fa-brands fa-whatsapp"></i></a><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener" aria-label="Google Maps Mahira Flowers"><i class="fa-solid fa-location-dot"></i></a>
+         </div>
+@@ -312,31 +312,31 @@
+       <div>
+         <h4 data-i18n="footer_categories">CATEGORIES</h4>
+         <ul>
+-          <li><a href="/search?q=artificial">Bunga Artificial</a></li>
+-          <li><a href="/search?q=anggrek">Anggrek Phalaenopsis K9</a></li>
+-          <li><a href="/search?q=flower+box">Flower Box</a></li>
+-          <li><a href="/search?q=bouquet">Bouquet</a></li>
+-          <li><a href="/search">Semua Koleksi</a></li>
++          <li><a href="/search?q=artificial" data-i18n="footer_cat_artificial">Artificial Flowers</a></li>
++          <li><a href="/search?q=anggrek" data-i18n="footer_cat_orchid">Phalaenopsis K9 Orchid</a></li>
++          <li><a href="/search?q=flower+box" data-i18n="footer_cat_flowerbox">Flower Box</a></li>
++          <li><a href="/search?q=bouquet" data-i18n="footer_cat_bouquet">Bouquet</a></li>
++          <li><a href="/search" data-i18n="footer_cat_all">All Collections</a></li>
+         </ul>
+       </div>
+       <div>
+         <h4 data-i18n="footer_care">CUSTOMER CARE</h4>
+         <ul>
+-          <li><a href="https://wa.me/6285284589556" target="_blank" rel="noopener">Hubungi Admin</a></li>
+-          <li><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener">Info Lokasi</a></li>
+-          <li><a href="#contact">Info Pengiriman</a></li>
++          <li><a href="https://wa.me/6285284589556" target="_blank" rel="noopener" data-i18n="footer_link_admin">Contact Admin</a></li>
++          <li><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener" data-i18n="footer_link_location">Location Info</a></li>
++          <li><a href="#contact" data-i18n="footer_link_shipping">Shipping Info</a></li>
+           <li><a href="#terms" id="termsLink">Terms of Service</a></li>
+-          <li><a href="#contact">Kebijakan Pengembalian</a></li>
++          <li><a href="#contact" data-i18n="footer_link_return">Return Policy</a></li>
+         </ul>
+       </div>
+       <div class="footer-contact">
+-        <h4>CONTACT</h4>
++        <h4 data-i18n="footer_contact_title">CONTACT</h4>
+         <p><i class="fa-solid fa-location-dot"></i> Bali &amp; Jakarta surrounding area</p>
+-        <p><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener"><i class="fa-solid fa-map"></i> Buka alamat di Google Maps</a></p>
++        <p><a href="https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9" target="_blank" rel="noopener"><i class="fa-solid fa-map"></i> <span data-i18n="footer_open_maps">Open address on Google Maps</span></a></p>
+         <p><a href="https://wa.me/6285284589556" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> 0852 8458 9556</a></p>
+         <p><a href="mailto:admin@mahiraflowerss.com"><i class="fa-regular fa-envelope"></i> admin@mahiraflowerss.com</a></p>
+         <p><a href="https://mahira-flowers.com" target="_blank" rel="noopener"><i class="fa-solid fa-globe"></i> mahira-flowers.com</a></p>
+-        <p><i class="fa-regular fa-clock"></i> Setiap hari, 09.00 - 17.00</p>
++        <p><i class="fa-regular fa-clock"></i> <span data-i18n="footer_hours">Every day, 09.00 - 17.00</span></p>
+       </div>
+       <div>
+         <h4 data-i18n="footer_newsletter">JOIN OUR NEWSLETTER</h4>
+@@ -500,7 +500,16 @@
+           disableOnInteraction: false,
+         },
+         loop: true,
+-        effect: "fade"
++        effect: "fade",
++        on: {
++          init: function () {
++            // Loop mode clones extra slides right around init — make sure
++            // those clones also get the currently selected language.
++            if (window.mahiraSetLanguage) {
++              window.mahiraSetLanguage(localStorage.getItem('mahira-lang') || 'id');
++            }
++          }
++        }
+       });
+ 
+       // Menu Toggle Responsive (Mobile)
