@@ -1,0 +1,31 @@
+diff a/views/search.html b/views/search.html	(rejected hunks)
+@@ -21,19 +21,20 @@
+   <link rel="stylesheet" href="/css/toast.css">
+   <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+ <style>
+-.search-shell{display:grid;grid-template-columns:250px 1fr;gap:32px;align-items:start}
+-.search-sidebar{background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:10px;position:sticky;top:20px;box-shadow:0 8px 18px rgba(58,42,42,.06)}
+-.search-sidebar h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:var(--maroon);padding:12px 14px 8px;margin:0}
+-.search-sidebar button{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:7px;font-weight:600;font-size:.95rem;color:var(--text);border:0;border-left:3px solid transparent;background:transparent;cursor:pointer;font-family:inherit}
+-.search-sidebar button:hover{background:#fff2df;color:var(--maroon)}
+-.search-sidebar button.active{background:var(--maroon);color:#fff;border-left-color:var(--coral)}
++.search-shell{display:grid;grid-template-columns:220px 1fr;gap:40px;align-items:start}
++.search-sidebar{position:sticky;top:20px;padding-right:20px}
++.search-sidebar h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#a8988a;margin:0 0 .75rem;font-weight:600}
++.search-sidebar button{display:block;width:100%;text-align:left;padding:.55rem 0;font-weight:500;font-size:.95rem;color:var(--text);border:0;border-bottom:1px solid var(--line, #ece3d6);background:transparent;cursor:pointer;font-family:inherit;transition:color .15s ease,padding-left .15s ease}
++.search-sidebar button:hover{color:var(--maroon);padding-left:4px}
++.search-sidebar button.active{color:var(--maroon);font-weight:700;padding-left:4px}
+ .search-main .search-form{display:flex;gap:10px;margin-bottom:20px}
+ .search-main .search-form .form-control{flex:1}
+ @media(max-width:800px){
+-  .search-shell{grid-template-columns:1fr}
+-  .search-sidebar{position:static;display:flex;overflow-x:auto;gap:4px;padding:8px}
++  .search-shell{grid-template-columns:1fr;gap:20px}
++  .search-sidebar{position:static;display:flex;overflow-x:auto;gap:1.25rem;padding:0 0 .5rem;border-bottom:1px solid var(--line, #ece3d6)}
+   .search-sidebar h2{display:none}
+-  .search-sidebar button{white-space:nowrap;width:auto}
++  .search-sidebar button{white-space:nowrap;width:auto;border-bottom:none;padding:.35rem 0}
++  .search-sidebar button.active,.search-sidebar button:hover{padding-left:0}
+ }
+ </style>
+ </head>

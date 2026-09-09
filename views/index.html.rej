@@ -1,0 +1,42 @@
+diff a/views/index.html b/views/index.html	(rejected hunks)
+@@ -276,36 +276,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+     <div class="section-title">
+       <h2 data-i18n="testi_title">What Our Clients Say</h2>
+     </div>
+-    <div class="testimonials">
+-      <div class="testimonial">
+-        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+-            class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+-        <p class="quote" data-i18n="quote1">"The Amour Coral Rose Bouquet was absolutely stunning! Smelt like heaven and
+-          lasted for over
+-          two weeks. Premium craftsmanship."</p>
+-        <div class="name">Clarissa S.</div>
+-        <div class="role" data-i18n="role1">Anniversary Gift</div>
+-      </div>
+-      <div class="testimonial">
+-        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+-            class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+-        <p class="quote" data-i18n="quote2">"Excellent customer service! They accommodated a custom change request
+-          immediately and
+-          delivered on time. Mahira is the best."</p>
+-        <div class="name">Garry W.</div>
+-        <div class="role" data-i18n="role2">Bespoke Event Order</div>
+-      </div>
+-      <div class="testimonial">
+-        <div class="stars"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i
+-            class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+-        <p class="quote" data-i18n="quote3">"The vase arrangements are pure art. Every guest asked where I got them.
+-          Perfect peach color
+-          scheme matches my living room perfectly."</p>
+-        <div class="name">Amelia R.</div>
+-        <div class="role" data-i18n="role3">Weekly Subscription</div>
+-      </div>
++    <div class="testimonials-wrap" id="testimonialsWrap">
++      <button type="button" class="testi-nav testi-nav-prev" id="testiPrev" aria-label="Sebelumnya" style="display:none;"><i class="fa-solid fa-chevron-left"></i></button>
++      <div class="testimonials" id="testimonialsTrack"></div>
++      <button type="button" class="testi-nav testi-nav-next" id="testiNext" aria-label="Berikutnya" style="display:none;"><i class="fa-solid fa-chevron-right"></i></button>
+     </div>
+-    <div id="dynamicTestimonials" class="testimonials" style="margin-top:1.5rem;"></div>
+ 
+     <div class="testimonial-form-wrap" style="max-width:520px;margin:2.5rem auto 0;">
+       <h3 data-i18n="testi_form_title" style="text-align:center;margin-bottom:1rem;">Bagikan Pengalaman Kamu</h3>

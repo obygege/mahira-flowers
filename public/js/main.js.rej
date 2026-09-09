@@ -1,0 +1,98 @@
+diff a/public/js/main.js b/public/js/main.js	(rejected hunks)
+@@ -401,25 +401,84 @@ function initTopbarActions() {
+   });
+ }
+ 
+-// Ambil testimoni dinamis (yang sudah di-approve admin) dan tampilkan di homepage
++// Testimoni bawaan (fallback) yang selalu ikut tampil bareng testimoni dari database.
++const STATIC_TESTIMONIALS = [
++  { rating: 5, review_text: 'The Amour Coral Rose Bouquet was absolutely stunning! Smelt like heaven and lasted for over two weeks. Premium craftsmanship.', customer_name: 'Clarissa S.', occasion_role: 'Anniversary Gift' },
++  { rating: 5, review_text: 'Excellent customer service! They accommodated a custom change request immediately and delivered on time. Mahira is the best.', customer_name: 'Garry W.', occasion_role: 'Bespoke Event Order' },
++  { rating: 5, review_text: 'The vase arrangements are pure art. Every guest asked where I got them. Perfect peach color scheme matches my living room perfectly.', customer_name: 'Amelia R.', occasion_role: 'Weekly Subscription' }
++];
++
++let testiAutoScrollTimer = null;
++
++function renderTestimonialCard(t) {
++  const rating = Math.min(5, Math.max(0, Number(t.rating) || 0));
++  return `
++    <div class="testimonial">
++      <div class="stars">${'<i class="fa-solid fa-star"></i>'.repeat(rating)}${'<i class="fa-regular fa-star"></i>'.repeat(5 - rating)}</div>
++      <p class="quote">"${String(t.review_text).replace(/</g, '&lt;')}"</p>
++      <div class="name">${String(t.customer_name).replace(/</g, '&lt;')}</div>
++      ${t.occasion_role ? `<div class="role">${String(t.occasion_role).replace(/</g, '&lt;')}</div>` : ''}
++    </div>
++  `;
++}
++
++// Gabungkan testimoni bawaan + testimoni dari customer (real-time, langsung tayang begitu dikirim).
++// Kalau totalnya lebih dari 3, otomatis berubah jadi slider yang bisa auto-geser & di-scroll manual.
+ async function loadDynamicTestimonials() {
+-  const container = document.querySelector('#dynamicTestimonials');
+-  if (!container) return;
++  const track = document.querySelector('#testimonialsTrack');
++  const wrap = document.querySelector('#testimonialsWrap');
++  if (!track || !wrap) return;
++
++  let dynamicTestimonials = [];
+   try {
+     const res = await fetch('/api/testimonials');
+     const json = await res.json();
+-    if (!json.success || !json.data.length) return;
+-    container.innerHTML = json.data.map(t => `
+-      <div class="testimonial">
+-        <div class="stars">${'<i class="fa-solid fa-star"></i>'.repeat(t.rating)}${'<i class="fa-regular fa-star"></i>'.repeat(5 - t.rating)}</div>
+-        <p class="quote">"${String(t.review_text).replace(/</g, '&lt;')}"</p>
+-        <div class="name">${String(t.customer_name).replace(/</g, '&lt;')}</div>
+-        ${t.occasion_role ? `<div class="role">${String(t.occasion_role).replace(/</g, '&lt;')}</div>` : ''}
+-      </div>
+-    `).join('');
++    if (json.success && Array.isArray(json.data)) dynamicTestimonials = json.data;
+   } catch (error) {
+     console.error('Gagal memuat testimoni:', error.message);
+   }
++
++  const all = [...STATIC_TESTIMONIALS, ...dynamicTestimonials];
++  track.innerHTML = all.map(renderTestimonialCard).join('');
++
++  const prevBtn = document.querySelector('#testiPrev');
++  const nextBtn = document.querySelector('#testiNext');
++  const isSlider = all.length > 3;
++
++  track.classList.toggle('is-slider', isSlider);
++  if (prevBtn) prevBtn.style.display = isSlider ? '' : 'none';
++  if (nextBtn) nextBtn.style.display = isSlider ? '' : 'none';
++
++  if (testiAutoScrollTimer) {
++    clearInterval(testiAutoScrollTimer);
++    testiAutoScrollTimer = null;
++  }
++  if (!isSlider) return;
++
++  const scrollByCard = (direction) => {
++    const card = track.querySelector('.testimonial');
++    const step = card ? card.getBoundingClientRect().width + 24 : 300;
++    const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 5;
++    if (direction > 0 && atEnd) {
++      track.scrollTo({ left: 0, behavior: 'smooth' });
++    } else {
++      track.scrollBy({ left: step * direction, behavior: 'smooth' });
++    }
++  };
++
++  prevBtn?.addEventListener('click', () => scrollByCard(-1));
++  nextBtn?.addEventListener('click', () => scrollByCard(1));
++
++  const startAutoScroll = () => {
++    testiAutoScrollTimer = setInterval(() => scrollByCard(1), 4000);
++  };
++  startAutoScroll();
++
++  // Auto-geser berhenti sementara saat pengunjung sedang scroll/hover manual, lalu lanjut lagi.
++  wrap.addEventListener('mouseenter', () => { if (testiAutoScrollTimer) clearInterval(testiAutoScrollTimer); });
++  wrap.addEventListener('mouseleave', startAutoScroll);
++  track.addEventListener('touchstart', () => { if (testiAutoScrollTimer) clearInterval(testiAutoScrollTimer); }, { passive: true });
++  track.addEventListener('touchend', startAutoScroll, { passive: true });
+ }
+ 
+ // Kirim / edit testimoni. Kalau customer login, form otomatis keisi testimoni lama dia (mode edit).
