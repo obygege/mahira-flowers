@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'mahira-flowers-local-secret';
 const FALLBACK_IMAGE = '/images/logo.png';
 const ADMIN_WHATSAPP = '6285284589556';
 const BANK_ACCOUNT_NAME = 'Mochammad Fadry Anom';
-const SITE_URL = (process.env.SITE_URL || 'https://mahiraflowers.id').replace(/\/$/, '');
+const SITE_URL = (process.env.SITE_URL || 'https://mahiraflowers.com').replace(/\/$/, '');
 
 function localizeProducts(products, lang) {
   if (lang !== 'en') return products;
@@ -813,7 +813,7 @@ app.delete('/api/admin/vouchers/:id', authenticate, requireAdmin, async (req, re
 // AI CHATBOT (Google Gemini - free tier) - konsultasi bunga otomatis
 // ==========================================
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
 const chatRateLimit = new Map(); // ip -> { count, resetAt }
 
 function chatRateLimited(ip) {
