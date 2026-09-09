@@ -417,8 +417,8 @@ app.get('/api/testimonials', async (req, res) => {
   res.json({ success: true, data: rows });
 });
 
-// Kirim testimoni baru dari pengunjung (publik, tanpa login). Masuk sebagai belum tampil (is_featured=0)
-// sampai di-approve admin, supaya tidak ada spam langsung muncul di homepage.
+// Kirim testimoni baru dari pengunjung (publik, tanpa login). Langsung tampil (is_featured=1)
+// begitu dikirim, admin masih bisa menyembunyikan/hapus dari panel admin kalau isinya spam.
 app.post('/api/testimonials', async (req, res) => {
   const customerName = String(req.body.customer_name || '').trim();
   const occasionRole = String(req.body.occasion_role || '').trim();
@@ -446,14 +446,14 @@ app.post('/api/testimonials', async (req, res) => {
   }
 
   if (existingId) {
-    await db.query(`UPDATE reviews SET customer_name = ?, occasion_role = ?, rating = ?, review_text = ?, is_featured = 0
+    await db.query(`UPDATE reviews SET customer_name = ?, occasion_role = ?, rating = ?, review_text = ?, is_featured = 1
       WHERE id = ?`, [customerName, occasionRole || null, rating, reviewText, existingId]);
-    return res.json({ success: true, updated: true, message: 'Testimoni kamu berhasil diperbarui dan akan tampil lagi setelah ditinjau admin.' });
+    return res.json({ success: true, updated: true, message: 'Testimoni kamu berhasil diperbarui dan sudah tayang di halaman utama.' });
   }
 
   await db.query(`INSERT INTO reviews (user_id, product_id, customer_name, occasion_role, rating, review_text, is_featured)
-    VALUES (?, NULL, ?, ?, ?, ?, 0)`, [userId, customerName, occasionRole || null, rating, reviewText]);
-  res.status(201).json({ success: true, updated: false, message: 'Terima kasih! Testimoni kamu akan tampil setelah ditinjau admin.' });
+    VALUES (?, NULL, ?, ?, ?, ?, 1)`, [userId, customerName, occasionRole || null, rating, reviewText]);
+  res.status(201).json({ success: true, updated: false, message: 'Terima kasih! Testimoni kamu sudah tayang di halaman utama.' });
 });
 
 // Ambil testimoni umum milik customer yang sedang login, buat prefill form (mode edit)

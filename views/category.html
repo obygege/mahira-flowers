@@ -21,18 +21,19 @@
   <link rel="stylesheet" href="/css/toast.css">
   <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
-.category-shell{display:grid;grid-template-columns:250px 1fr;gap:32px;align-items:start}
-.category-sidebar{background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:10px;position:sticky;top:20px;box-shadow:0 8px 18px rgba(58,42,42,.06)}
-.category-sidebar h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:var(--maroon);padding:12px 14px 8px;margin:0}
-.category-sidebar a{display:block;padding:12px 14px;border-radius:7px;font-weight:600;font-size:.95rem;color:var(--text);border-left:3px solid transparent}
-.category-sidebar a:hover{background:#fff2df;color:var(--maroon)}
-.category-sidebar a.active{background:var(--maroon);color:#fff;border-left-color:var(--coral)}
+.category-shell{display:grid;grid-template-columns:220px 1fr;gap:40px;align-items:start}
+.category-sidebar{position:sticky;top:20px;padding-right:20px}
+.category-sidebar h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#a8988a;margin:0 0 .75rem;font-weight:600}
+.category-sidebar a{display:block;padding:.55rem 0;font-weight:500;font-size:.95rem;color:var(--text);border-bottom:1px solid var(--line, #ece3d6);transition:color .15s ease,padding-left .15s ease}
+.category-sidebar a:hover{color:var(--maroon);padding-left:4px}
+.category-sidebar a.active{color:var(--maroon);font-weight:700;padding-left:4px}
 .category-main .page-heading{margin-bottom:20px}
 @media(max-width:800px){
-  .category-shell{grid-template-columns:1fr}
-  .category-sidebar{position:static;display:flex;overflow-x:auto;gap:4px;padding:8px}
+  .category-shell{grid-template-columns:1fr;gap:20px}
+  .category-sidebar{position:static;display:flex;overflow-x:auto;gap:1.25rem;padding:0 0 .5rem;border-bottom:1px solid var(--line, #ece3d6)}
   .category-sidebar h2{display:none}
-  .category-sidebar a{white-space:nowrap}
+  .category-sidebar a{white-space:nowrap;border-bottom:none;padding:.35rem 0}
+  .category-sidebar a.active,.category-sidebar a:hover{padding-left:0}
 }
 </style>
 </head>

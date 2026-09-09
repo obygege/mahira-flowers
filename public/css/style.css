@@ -802,6 +802,78 @@ nav.main-nav a.active {
   color: #948a7c;
 }
 
+/* Testimonials slider (aktif otomatis kalau testimoni > 3) */
+.testimonials-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.testimonials.is-slider {
+  display: flex;
+  grid-template-columns: none;
+  gap: 1.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: .25rem .25rem 1rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.testimonials.is-slider .testimonial {
+  flex: 0 0 calc(33.333% - 1rem);
+  scroll-snap-align: start;
+}
+
+.testimonials.is-slider::-webkit-scrollbar {
+  height: 6px;
+}
+
+.testimonials.is-slider::-webkit-scrollbar-thumb {
+  background: var(--maroon);
+  border-radius: 3px;
+  opacity: .35;
+}
+
+.testi-nav {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line, #e6ddd0);
+  background: #fff;
+  color: var(--maroon);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .2s ease, color .2s ease;
+}
+
+.testi-nav:hover {
+  background: var(--maroon);
+  color: #fff;
+}
+
+@media(max-width:900px) {
+  .testimonials.is-slider .testimonial {
+    flex: 0 0 calc(80% - 1rem);
+  }
+}
+
+@media(max-width:520px) {
+  .testimonials.is-slider .testimonial {
+    flex: 0 0 88%;
+  }
+
+  .testi-nav {
+    width: 34px;
+    height: 34px;
+  }
+}
+
 /* Instagram */
 .instagram-title {
   text-align: center;
