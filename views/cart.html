@@ -65,7 +65,7 @@
       <div class="voucher-row"><input id="c_voucherCode" class="form-control" placeholder="Masukkan kode voucher"><button type="button" class="btn btn-light" id="c_voucherCheck">Pakai</button></div>
       <p id="c_voucherMessage" class="message"></p>
     </div>
-    <button type="button" class="btn wide" id="checkoutSubmit">Proceed to Order</button>
+    <button type="button" class="btn wide" id="checkoutSubmit">Pesan via WhatsApp</button>
     <p id="checkoutStatus" class="message"></p>
   </section>
 </main>
@@ -154,7 +154,6 @@ document.getElementById('c_voucherCheck').addEventListener('click', async ()=>{
 });
 
 document.getElementById('checkoutSubmit').addEventListener('click', async function(){
-  if(!requireCustomer())return;
   const button=this;
   const status=document.getElementById('checkoutStatus');
   const deliveryType=document.getElementById('c_deliveryType').value;
@@ -179,7 +178,8 @@ document.getElementById('checkoutSubmit').addEventListener('click', async functi
   try{
     const result=await customerFetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     localStorage.removeItem('mahira_checkout_draft');
-    location.href = `/payment/${result.order_number}`;
+    status.textContent='Pesanan dibuat! Mengarahkan ke WhatsApp admin untuk konfirmasi transfer...';
+    setTimeout(()=>{ location.href = result.whatsapp_url || `/payment/${result.order_number}`; }, 600);
   }catch(error){
     status.textContent=error.message;
     button.disabled=false; button.textContent='Proceed to Order';

@@ -1,0 +1,487 @@
+diff --git a/public/css/style.css b/public/css/style.css
+index fefb6d6..79135a0 100644
+--- a/public/css/style.css
++++ b/public/css/style.css
+@@ -301,7 +301,7 @@ header.main-header {
+ }
+ 
+ .logo img {
+-  width: 110px;
++  width: 190px;
+   margin: 0 auto;
+ }
+ 
+@@ -1741,7 +1741,7 @@ footer .btn:hover {
+   }
+ 
+   .logo img {
+-    width: 96px;
++    width: 150px;
+   }
+ 
+   nav.main-nav {
+@@ -2146,7 +2146,7 @@ header.main-header {
+   }
+ 
+   .main-header>.logo img {
+-    width: 110px;
++    width: 170px;
+     margin: 0 auto;
+   }
+ 
+@@ -2269,7 +2269,7 @@ header.main-header {
+   }
+ 
+   .main-header>.logo img {
+-    width: 96px;
++    width: 150px;
+   }
+ 
+   .main-header>.header-actions {
+diff --git a/server.js b/server.js
+index 0e9c9c7..88ce41f 100644
+--- a/server.js
++++ b/server.js
+@@ -15,6 +15,19 @@ const PORT = process.env.PORT || 3000;
+ const JWT_SECRET = process.env.JWT_SECRET || 'mahira-flowers-local-secret';
+ const FALLBACK_IMAGE = '/images/logo.png';
+ const ADMIN_WHATSAPP = '6285284589556';
++// Bangun link WhatsApp untuk 2 mode: wa.me (buka app WA di HP / prompt pilih WA Web di desktop)
++// dan api.whatsapp.com yang khusus dipakai untuk arahkan ke WhatsApp Web di browser desktop.
++function buildWhatsappLinks(text) {
++  return {
++    whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${text}`,
++    whatsapp_app_url: `https://api.whatsapp.com/send?phone=${ADMIN_WHATSAPP}&text=${text}`,
++    whatsapp_web_url: `https://web.whatsapp.com/send?phone=${ADMIN_WHATSAPP}&text=${text}`
++  };
++}
++// Info rekening pembayaran manual (transfer via WhatsApp, tidak ada pembayaran online di web)
++const PAYMENT_BANK_NAME = process.env.PAYMENT_BANK_NAME || 'BCA';
++const PAYMENT_BANK_NUMBER = process.env.PAYMENT_BANK_NUMBER || '-';
++const PAYMENT_BANK_HOLDER = 'Mochammad Fadry Anom';
+ const SITE_URL = (process.env.SITE_URL || 'https://mahiraflowers.id').replace(/\/$/, '');
+ 
+ function localizeProducts(products, lang) {
+@@ -294,16 +307,18 @@ app.put('/api/admin/profile', authenticate, requireAdmin, async (req, res) => {
+ 
+ app.get('/api/products/search', async (req, res) => {
+   const term = String(req.query.q || '').trim();
++  const categorySlug = String(req.query.category || '').trim();
+   try {
+     const like = `%${term}%`;
+     const [products] = await db.query(`
+-      SELECT p.*, c.name AS category_name, COALESCE(pi.image_url, ?) AS image_url,
++      SELECT p.*, c.name AS category_name, c.slug AS category_slug, COALESCE(pi.image_url, ?) AS image_url,
+         COALESCE(ROUND((SELECT AVG(r.rating) FROM reviews r WHERE r.product_id = p.id), 1), 0) AS average_rating,
+         (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS review_count
+       FROM products p LEFT JOIN categories c ON c.id = p.category_id
+       LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
+       WHERE p.is_active = TRUE AND (? = '' OR p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)
+-      ORDER BY p.created_at DESC`, [FALLBACK_IMAGE, term, like, like, like]);
++        AND (? = '' OR c.slug = ?)
++      ORDER BY p.created_at DESC`, [FALLBACK_IMAGE, term, like, like, like, categorySlug, categorySlug]);
+     res.json({ success: true, data: localizeProducts(products, req.query.lang), query: term });
+   } catch (error) {
+     res.status(500).json({ success: false, message: 'Gagal mencari produk' });
+@@ -433,6 +448,28 @@ for (const statement of [
+   db.query(statement).catch(error => { if (!['ER_DUP_FIELDNAME', 'ER_DUP_COLUMN'].includes(error.code)) console.error('Schema update:', error.message); });
+ }
+ 
++// Kategori tetap toko: Jenis Bunga, Daun, Hampers, Wedding Property, Lainnya.
++// Otomatis dibuat kalau belum ada, supaya sidebar kategori di halaman produk selalu punya isi.
++const FIXED_STORE_CATEGORIES = [
++  { name: 'Jenis Bunga', slug: 'jenis-bunga' },
++  { name: 'Daun', slug: 'daun' },
++  { name: 'Hampers', slug: 'hampers' },
++  { name: 'Wedding Property', slug: 'wedding-property' },
++  { name: 'Lainnya', slug: 'lainnya' }
++];
++(async () => {
++  try {
++    for (const category of FIXED_STORE_CATEGORIES) {
++      await db.query(
++        'INSERT INTO categories (name, slug) SELECT ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM categories WHERE slug = ?)',
++        [category.name, category.slug, category.slug]
++      );
++    }
++  } catch (error) {
++    console.error('Gagal menyiapkan kategori tetap:', error.message);
++  }
++})();
++
+ // ==========================================
+ // SKEMA PEMBAYARAN QRIS STATIS (kode unik)
+ // ==========================================
+@@ -564,27 +601,30 @@ async function createOrder(body) {
+     }
+     await connection.commit();
+ 
+-    const [[qrisSetting]] = await db.query(`SELECT setting_value FROM site_settings WHERE setting_key = 'qris_image'`).catch(() => [[null]]);
+     const productLines = items.map(i => `- ${productMap.get(i.product_id).name} x${i.quantity}`).join('\n');
+-    const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya sudah transfer QRIS untuk pesanan berikut.
++    const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya ingin memesan.
+ 
+ Nomor pesanan: ${orderNumber}
+ ${productLines}
+-Total dibayar: Rp ${paymentAmount.toLocaleString('id-ID')} (termasuk kode unik ${uniqueCode})
++Total: Rp ${paymentAmount.toLocaleString('id-ID')}
+ Nama: ${sender_name}
+-No. HP: ${sender_phone}`);
++No. HP: ${sender_phone}
++
++Mohon info konfirmasi & pembayaran ke rekening ${PAYMENT_BANK_NAME} a.n. ${PAYMENT_BANK_HOLDER}${PAYMENT_BANK_NUMBER !== '-' ? ' No. ' + PAYMENT_BANK_NUMBER : ''}. Terima kasih.`);
+ 
+     return {
+       status: 201,
+       body: {
+         success: true,
+-        message: 'Pesanan berhasil dibuat, silakan selesaikan pembayaran QRIS',
++        message: 'Pesanan berhasil dibuat, silakan lanjutkan konfirmasi via WhatsApp',
+         order_number: orderNumber,
+         subtotal, discount, total: totalAmount,
+         unique_code: uniqueCode,
+         payment_amount: paymentAmount,
+-        qris_image: qrisSetting?.setting_value || null,
+-        whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappText}`
++        bank_name: PAYMENT_BANK_NAME,
++        bank_number: PAYMENT_BANK_NUMBER,
++        bank_holder: PAYMENT_BANK_HOLDER,
++        ...buildWhatsappLinks(whatsappText)
+       }
+     };
+   } catch (error) {
+@@ -640,15 +680,16 @@ app.get('/api/orders/:orderNumber/payment', async (req, res) => {
+     `SELECT oi.quantity, p.name FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?`,
+     [order.id]
+   );
+-  const [[qrisSetting]] = await db.query(`SELECT setting_value FROM site_settings WHERE setting_key = 'qris_image'`).catch(() => [[null]]);
+   const productLines = items.map(i => `- ${i.name} x${i.quantity}`).join('\n');
+-  const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya sudah transfer QRIS untuk pesanan berikut.
++  const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya ingin konfirmasi pesanan berikut.
+ 
+ Nomor pesanan: ${order.order_number}
+ ${productLines}
+-Total dibayar: Rp ${Number(order.payment_amount).toLocaleString('id-ID')} (termasuk kode unik ${order.unique_code})
++Total: Rp ${Number(order.payment_amount).toLocaleString('id-ID')}
+ Nama: ${order.sender_name}
+-No. HP: ${order.sender_phone}`);
++No. HP: ${order.sender_phone}
++
++Mohon info konfirmasi & pembayaran ke rekening ${PAYMENT_BANK_NAME} a.n. ${PAYMENT_BANK_HOLDER}${PAYMENT_BANK_NUMBER !== '-' ? ' No. ' + PAYMENT_BANK_NUMBER : ''}. Terima kasih.`);
+   res.json({
+     success: true,
+     data: {
+@@ -658,8 +699,10 @@ No. HP: ${order.sender_phone}`);
+       payment_amount: Number(order.payment_amount),
+       unique_code: order.unique_code,
+       items,
+-      qris_image: qrisSetting?.setting_value || null,
+-      whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappText}`,
++      bank_name: PAYMENT_BANK_NAME,
++      bank_number: PAYMENT_BANK_NUMBER,
++      bank_holder: PAYMENT_BANK_HOLDER,
++      ...buildWhatsappLinks(whatsappText),
+       admin_whatsapp: ADMIN_WHATSAPP
+     }
+   });
+diff --git a/views/cart.html b/views/cart.html
+index edacd62..8f2441e 100644
+--- a/views/cart.html
++++ b/views/cart.html
+@@ -65,7 +65,7 @@
+       <div class="voucher-row"><input id="c_voucherCode" class="form-control" placeholder="Masukkan kode voucher"><button type="button" class="btn btn-light" id="c_voucherCheck">Pakai</button></div>
+       <p id="c_voucherMessage" class="message"></p>
+     </div>
+-    <button type="button" class="btn wide" id="checkoutSubmit">Proceed to Order</button>
++    <button type="button" class="btn wide" id="checkoutSubmit">Pesan via WhatsApp</button>
+     <p id="checkoutStatus" class="message"></p>
+   </section>
+ </main>
+@@ -154,7 +154,6 @@ document.getElementById('c_voucherCheck').addEventListener('click', async ()=>{
+ });
+ 
+ document.getElementById('checkoutSubmit').addEventListener('click', async function(){
+-  if(!requireCustomer())return;
+   const button=this;
+   const status=document.getElementById('checkoutStatus');
+   const deliveryType=document.getElementById('c_deliveryType').value;
+@@ -171,18 +170,35 @@ document.getElementById('checkoutSubmit').addEventListener('click', async functi
+     card_message: document.getElementById('c_cardMessage').value.trim(),
+     voucher_code: appliedVoucher?.code || document.getElementById('c_voucherCode').value.trim()
+   };
++  if(!cartItems.length){
++    status.textContent='Keranjang masih kosong, tambahkan produk terlebih dahulu.';
++    return;
++  }
+   if(!payload.delivery_date||!payload.sender_name||!payload.sender_phone||(deliveryType==='delivery'&&!payload.delivery_address)){
+     status.textContent='Mohon lengkapi data pengiriman dan data pengirim terlebih dahulu.';
+     return;
+   }
+   button.disabled=true; button.textContent='Memproses...'; status.textContent='';
+   try{
+-    const result=await customerFetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
++    let result;
++    if(isGuest){
++      // Checkout tanpa login: kirim langsung item keranjang tamu + detail pengiriman.
++      // Pesanan tetap tercatat di sistem (tabel orders) walau tanpa akun.
++      payload.items = cartItems.map(i=>({ product_id: i.product_id, quantity: i.quantity }));
++      const response = await fetch('/api/orders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
++      result = await response.json();
++      if(!response.ok || !result.success) throw new Error(result.message || 'Gagal membuat pesanan');
++      saveGuestCart([]);
++    } else {
++      result = await customerFetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
++    }
+     localStorage.removeItem('mahira_checkout_draft');
++    // Tidak ada pembayaran online di web — pesanan langsung diarahkan ke halaman konfirmasi
++    // yang berisi tombol WhatsApp (HP) dan WhatsApp Web, isi chatnya sudah otomatis lengkap.
+     location.href = `/payment/${result.order_number}`;
+   }catch(error){
+     status.textContent=error.message;
+-    button.disabled=false; button.textContent='Proceed to Order';
++    button.disabled=false; button.textContent='Pesan via WhatsApp';
+   }
+ });
+ 
+diff --git a/views/category.html b/views/category.html
+index 636a00c..60cc690 100644
+--- a/views/category.html
++++ b/views/category.html
+@@ -12,11 +12,81 @@
+ <link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+   <link rel="stylesheet" href="/css/toast.css">
+   <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
++<style>
++.category-shell{display:grid;grid-template-columns:250px 1fr;gap:32px;align-items:start}
++.category-sidebar{background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:10px;position:sticky;top:20px;box-shadow:0 8px 18px rgba(58,42,42,.06)}
++.category-sidebar h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:var(--maroon);padding:12px 14px 8px;margin:0}
++.category-sidebar a{display:block;padding:12px 14px;border-radius:7px;font-weight:600;font-size:.95rem;color:var(--text);border-left:3px solid transparent}
++.category-sidebar a:hover{background:#fff2df;color:var(--maroon)}
++.category-sidebar a.active{background:var(--maroon);color:#fff;border-left-color:var(--coral)}
++.category-main .page-heading{margin-bottom:20px}
++@media(max-width:800px){
++  .category-shell{grid-template-columns:1fr}
++  .category-sidebar{position:static;display:flex;overflow-x:auto;gap:4px;padding:8px}
++  .category-sidebar h2{display:none}
++  .category-sidebar a{white-space:nowrap}
++}
++</style>
+ </head>
+ <body>
+ <header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a><a href="/search">Cari</a></nav></header>
+-<main class="page-shell"><a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a><div class="page-heading"><div><p class="eyebrow" data-i18n="category_eyebrow">Koleksi Mahira</p><h1 id="title">Kategori</h1><p class="muted" data-i18n="category_desc">Produk pilihan berdasarkan kategori dari katalog kami.</p></div></div><div id="results" class="product-grid"></div></main>
++<main class="page-shell">
++  <a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a>
++  <div class="category-shell">
++    <aside class="category-sidebar" id="categorySidebar">
++      <h2>Kategori</h2>
++      <!-- Diisi dinamis berdasarkan daftar kategori tetap -->
++    </aside>
++    <div class="category-main">
++      <div class="page-heading">
++        <div>
++          <p class="eyebrow" data-i18n="category_eyebrow">Koleksi Mahira</p>
++          <h1 id="title">Kategori</h1>
++          <p class="muted" data-i18n="category_desc">Produk pilihan berdasarkan kategori dari katalog kami.</p>
++        </div>
++      </div>
++      <div id="results" class="product-grid"></div>
++    </div>
++  </div>
++</main>
+ <script src="/js/toast.js"></script>
+ <script src="/js/chatbot.js"></script>
+-<script src="/js/customer.js"></script><script>async function load(){const slug=location.pathname.split('/').pop();try{const r=await fetch('/api/categories/'+encodeURIComponent(slug)+'?lang='+encodeURIComponent(customerLang()));const d=await r.json();if(!r.ok)throw Error(d.message);document.title=d.category.name+' - Mahira Flowers';document.getElementById('title').textContent=d.category.name;document.getElementById('results').innerHTML=d.data.map(p=>productCard(p)).join('')||`<div class="empty">${customerTranslations[customerLang()].category_empty}</div>`}catch(e){document.getElementById('results').innerHTML='<div class="empty">'+safe(e.message)+'</div>'}}document.addEventListener('mahira-lang-changed',load);load();</script>
++<script src="/js/customer.js"></script>
++<script>
++// Kategori tetap yang selalu tampil di sidebar kiri.
++// Slug harus sama persis dengan slug kategori di database/admin.
++const FIXED_CATEGORIES = [
++  { slug: 'jenis-bunga', name: 'Jenis Bunga' },
++  { slug: 'daun', name: 'Daun' },
++  { slug: 'hampers', name: 'Hampers' },
++  { slug: 'wedding-property', name: 'Wedding Property' },
++  { slug: 'lainnya', name: 'Lainnya' }
++];
++
++function renderSidebar(activeSlug){
++  const sidebar = document.getElementById('categorySidebar');
++  const links = FIXED_CATEGORIES.map(c =>
++    `<a href="/category/${c.slug}" class="${c.slug===activeSlug?'active':''}">${c.name}</a>`
++  ).join('');
++  sidebar.innerHTML = '<h2>Kategori</h2>' + links;
++}
++
++async function load(){
++  const slug = location.pathname.split('/').pop();
++  renderSidebar(slug);
++  try{
++    const r = await fetch('/api/categories/'+encodeURIComponent(slug)+'?lang='+encodeURIComponent(customerLang()));
++    const d = await r.json();
++    if(!r.ok) throw Error(d.message);
++    document.title = d.category.name + ' - Mahira Flowers';
++    document.getElementById('title').textContent = d.category.name;
++    document.getElementById('results').innerHTML = d.data.map(p=>productCard(p)).join('') || `<div class="empty">${customerTranslations[customerLang()].category_empty}</div>`;
++  }catch(e){
++    document.getElementById('title').textContent = FIXED_CATEGORIES.find(c=>c.slug===slug)?.name || 'Kategori';
++    document.getElementById('results').innerHTML = '<div class="empty">'+safe(e.message)+'</div>';
++  }
++}
++document.addEventListener('mahira-lang-changed', load);
++load();
++</script>
+ </body></html>
+diff --git a/views/payment.html b/views/payment.html
+index 499ad41..f53603f 100644
+--- a/views/payment.html
++++ b/views/payment.html
+@@ -18,6 +18,7 @@
+ .payment-actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+ .payment-note{font-size:.8rem;color:#8a7f6d;margin-top:14px}
+ .status-pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;background:#fff1d6;color:#a06a1a;margin-bottom:8px}
++.bank-info{background:#fff7e8;border:1px solid var(--line);border-radius:8px;padding:14px;margin:14px 0}
+ .success-overlay{position:fixed;inset:0;background:rgba(58,42,42,.55);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+ .success-box{background:#fff;border-radius:12px;padding:32px 28px;max-width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+ .success-box i{font-size:2.6rem;color:#2e9e5b;margin-bottom:10px}
+@@ -66,17 +67,21 @@ async function loadPayment() {
+ 
+ function render(data) {
+   document.getElementById('paymentCard').innerHTML = `
+-    <span class="status-pill" id="statusPill">${data.status === 'pending' ? 'Menunggu Pembayaran' : data.status}</span>
+-    <h2 style="margin:4px 0;">Pembayaran QRIS</h2>
++    <span class="status-pill" id="statusPill">${data.status === 'pending' ? 'Menunggu Konfirmasi' : data.status}</span>
++    <h2 style="margin:4px 0;">Pesanan Diterima</h2>
+     <p class="muted">Nomor pesanan: <strong>${data.order_number}</strong></p>
+-    <img src="${data.qris_image || '/images/logo.png'}" alt="QRIS Mahira Flowers">
+     <div class="payment-amount">${money(data.payment_amount)}</div>
+-    <p class="payment-unique">Termasuk kode unik ${data.unique_code} — transfer harus sesuai nominal persis agar terverifikasi otomatis.</p>
++    <div class="bank-info">
++      <p class="muted" style="margin-bottom:4px;">Transfer pembayaran ke rekening:</p>
++      <p style="font-weight:700;color:var(--maroon);margin:2px 0;">${data.bank_name || 'Bank'}${data.bank_number && data.bank_number !== '-' ? ' — ' + data.bank_number : ''}</p>
++      <p style="margin:2px 0;">a.n. <strong>${data.bank_holder || 'Mochammad Fadry Anom'}</strong></p>
++    </div>
+     <div class="payment-actions">
+-      <a class="btn btn-dark" href="${data.whatsapp_url}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Konfirmasi via WhatsApp</a>
++      <a class="btn btn-dark" href="${data.whatsapp_app_url}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Buka WhatsApp (HP)</a>
++      <a class="btn btn-light" href="${data.whatsapp_web_url}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Buka WhatsApp Web</a>
+       <a class="btn btn-light" href="/">Kembali ke beranda</a>
+     </div>
+-    <p class="payment-note">Status pesanan akan diperbarui otomatis setelah admin Mahira Flowers mengonfirmasi pembayaran Anda.</p>
++    <p class="payment-note">Pesanan Anda diproses langsung oleh admin Mahira Flowers melalui WhatsApp. Tidak ada pembayaran online di website ini — semua konfirmasi transfer dilakukan lewat chat WhatsApp.</p>
+   `;
+ }
+ 
+diff --git a/views/search.html b/views/search.html
+index 739a5e3..4866c59 100644
+--- a/views/search.html
++++ b/views/search.html
+@@ -12,12 +12,106 @@
+ <link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+   <link rel="stylesheet" href="/css/toast.css">
+   <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
++<style>
++.search-shell{display:grid;grid-template-columns:250px 1fr;gap:32px;align-items:start}
++.search-sidebar{background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:10px;position:sticky;top:20px;box-shadow:0 8px 18px rgba(58,42,42,.06)}
++.search-sidebar h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:var(--maroon);padding:12px 14px 8px;margin:0}
++.search-sidebar button{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:7px;font-weight:600;font-size:.95rem;color:var(--text);border:0;border-left:3px solid transparent;background:transparent;cursor:pointer;font-family:inherit}
++.search-sidebar button:hover{background:#fff2df;color:var(--maroon)}
++.search-sidebar button.active{background:var(--maroon);color:#fff;border-left-color:var(--coral)}
++.search-main .search-form{display:flex;gap:10px;margin-bottom:20px}
++.search-main .search-form .form-control{flex:1}
++@media(max-width:800px){
++  .search-shell{grid-template-columns:1fr}
++  .search-sidebar{position:static;display:flex;overflow-x:auto;gap:4px;padding:8px}
++  .search-sidebar h2{display:none}
++  .search-sidebar button{white-space:nowrap;width:auto}
++}
++</style>
+ </head>
+ <body>
+ <header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a></nav></header>
+-<main class="page-shell"><a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a><div class="page-heading"><div><p class="eyebrow" data-i18n="search_eyebrow">Koleksi kami</p><h1 data-i18n="search_title">Cari produk</h1><p class="muted" data-i18n="search_desc">Temukan rangkaian berdasarkan nama, kategori, atau deskripsi.</p></div></div>
+-<form id="searchForm" class="result-panel search-form"><input id="query" class="form-control" data-i18n-placeholder="search_placeholder" placeholder="Cari buket, flower box..." autofocus><button class="btn btn-dark"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search_btn">Cari</span></button></form><p id="message" class="muted"></p><div id="results" class="product-grid"></div></main>
++<main class="page-shell">
++  <a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a>
++  <div class="page-heading">
++    <div>
++      <p class="eyebrow" data-i18n="search_eyebrow">Koleksi kami</p>
++      <h1 data-i18n="search_title">Cari produk</h1>
++      <p class="muted" data-i18n="search_desc">Temukan rangkaian berdasarkan nama, kategori, atau deskripsi.</p>
++    </div>
++  </div>
++
++  <div class="search-shell">
++    <aside class="search-sidebar" id="categorySidebar">
++      <h2>Kategori</h2>
++      <button type="button" class="active" data-slug="">Semua Produk</button>
++      <!-- Diisi dinamis dari /api/categories (data asli database) -->
++    </aside>
++
++    <div class="search-main">
++      <form id="searchForm" class="result-panel search-form">
++        <input id="query" class="form-control" data-i18n-placeholder="search_placeholder" placeholder="Cari buket, flower box...">
++        <button class="btn btn-dark" type="submit"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search_btn">Cari</span></button>
++      </form>
++      <p id="message" class="muted"></p>
++      <div id="results" class="product-grid"></div>
++    </div>
++  </div>
++</main>
+ <script src="/js/toast.js"></script>
+ <script src="/js/chatbot.js"></script>
+-<script src="/js/customer.js"></script><script>const queryParams=new URLSearchParams(location.search);document.getElementById('query').value=queryParams.get('q')||'';async function search(){const q=document.getElementById('query').value.trim();const r=await fetch('/api/products/search?lang='+encodeURIComponent(customerLang())+'&q='+encodeURIComponent(q));const d=await r.json();const dict=customerTranslations[customerLang()];document.getElementById('message').textContent=`${d.data?.length||0} ${dict.search_count}`;document.getElementById('results').innerHTML=d.data?.map(p=>productCard(p)).join('')||`<div class="empty">${dict.search_empty}</div>`}document.getElementById('searchForm').addEventListener('submit',e=>{e.preventDefault();search()});document.addEventListener('mahira-lang-changed',search);search();</script>
++<script src="/js/customer.js"></script>
++<script>
++let activeCategorySlug = '';
++let allCategories = [];
++
++async function loadCategories(){
++  try{
++    const r = await fetch('/api/categories');
++    const d = await r.json();
++    allCategories = d.data || [];
++    const sidebar = document.getElementById('categorySidebar');
++    const buttonsHtml = allCategories.map(c =>
++      `<button type="button" data-slug="${safe(c.slug)}">${safe(c.name)}</button>`
++    ).join('');
++    sidebar.innerHTML = '<h2>Kategori</h2><button type="button" class="active" data-slug="">Semua Produk</button>' + buttonsHtml;
++  }catch(e){ /* biarkan sidebar cuma tampil "Semua Produk" kalau kategori gagal dimuat */ }
++}
++
++function setActiveCategoryButton(slug){
++  document.querySelectorAll('#categorySidebar button').forEach(btn => {
++    btn.classList.toggle('active', btn.dataset.slug === slug);
++  });
++}
++
++async function search(){
++  const q = document.getElementById('query').value.trim();
++  const r = await fetch('/api/products/search?lang=' + encodeURIComponent(customerLang()) + '&q=' + encodeURIComponent(q) + '&category=' + encodeURIComponent(activeCategorySlug));
++  const d = await r.json();
++  const dict = customerTranslations[customerLang()];
++  document.getElementById('message').textContent = `${d.data?.length || 0} ${dict.search_count}`;
++  document.getElementById('results').innerHTML = d.data?.map(p => productCard(p)).join('') || `<div class="empty">${dict.search_empty}</div>`;
++}
++
++document.getElementById('categorySidebar').addEventListener('click', e => {
++  const button = e.target.closest('button[data-slug]');
++  if (!button) return;
++  activeCategorySlug = button.dataset.slug || '';
++  setActiveCategoryButton(activeCategorySlug);
++  search();
++});
++
++const queryParams = new URLSearchParams(location.search);
++document.getElementById('query').value = queryParams.get('q') || '';
++activeCategorySlug = queryParams.get('category') || '';
++
++document.getElementById('searchForm').addEventListener('submit', e => { e.preventDefault(); search(); });
++document.addEventListener('mahira-lang-changed', search);
++
++(async function init(){
++  await loadCategories();
++  setActiveCategoryButton(activeCategorySlug);
++  search();
++})();
++</script>
+ </body></html>

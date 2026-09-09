@@ -1,0 +1,37 @@
+diff a/views/payment.html b/views/payment.html	(rejected hunks)
+@@ -18,6 +18,7 @@
+ .payment-actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
+ .payment-note{font-size:.8rem;color:#8a7f6d;margin-top:14px}
+ .status-pill{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:700;background:#fff1d6;color:#a06a1a;margin-bottom:8px}
++.bank-info{background:#fff7e8;border:1px solid var(--line);border-radius:8px;padding:14px;margin:14px 0}
+ .success-overlay{position:fixed;inset:0;background:rgba(58,42,42,.55);display:none;align-items:center;justify-content:center;z-index:999;padding:20px}
+ .success-box{background:#fff;border-radius:12px;padding:32px 28px;max-width:360px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+ .success-box i{font-size:2.6rem;color:#2e9e5b;margin-bottom:10px}
+@@ -66,17 +67,21 @@ async function loadPayment() {
+ 
+ function render(data) {
+   document.getElementById('paymentCard').innerHTML = `
+-    <span class="status-pill" id="statusPill">${data.status === 'pending' ? 'Menunggu Pembayaran' : data.status}</span>
+-    <h2 style="margin:4px 0;">Pembayaran QRIS</h2>
++    <span class="status-pill" id="statusPill">${data.status === 'pending' ? 'Menunggu Konfirmasi' : data.status}</span>
++    <h2 style="margin:4px 0;">Pesanan Diterima</h2>
+     <p class="muted">Nomor pesanan: <strong>${data.order_number}</strong></p>
+-    <img src="${data.qris_image || '/images/logo.png'}" alt="QRIS Mahira Flowers">
+     <div class="payment-amount">${money(data.payment_amount)}</div>
+-    <p class="payment-unique">Termasuk kode unik ${data.unique_code} — transfer harus sesuai nominal persis agar terverifikasi otomatis.</p>
++    <div class="bank-info">
++      <p class="muted" style="margin-bottom:4px;">Transfer pembayaran ke rekening:</p>
++      <p style="font-weight:700;color:var(--maroon);margin:2px 0;">${data.bank_name || 'Bank'}${data.bank_number && data.bank_number !== '-' ? ' — ' + data.bank_number : ''}</p>
++      <p style="margin:2px 0;">a.n. <strong>${data.bank_holder || 'Mochammad Fadry Anom'}</strong></p>
++    </div>
+     <div class="payment-actions">
+-      <a class="btn btn-dark" href="${data.whatsapp_url}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Konfirmasi via WhatsApp</a>
++      <a class="btn btn-dark" href="${data.whatsapp_app_url}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Buka WhatsApp (HP)</a>
++      <a class="btn btn-light" href="${data.whatsapp_web_url}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> Buka WhatsApp Web</a>
+       <a class="btn btn-light" href="/">Kembali ke beranda</a>
+     </div>
+-    <p class="payment-note">Status pesanan akan diperbarui otomatis setelah admin Mahira Flowers mengonfirmasi pembayaran Anda.</p>
++    <p class="payment-note">Pesanan Anda diproses langsung oleh admin Mahira Flowers melalui WhatsApp. Tidak ada pembayaran online di website ini — semua konfirmasi transfer dilakukan lewat chat WhatsApp.</p>
+   `;
+ }
+ 

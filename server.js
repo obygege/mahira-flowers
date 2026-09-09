@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mahira-flowers-local-secret';
 const FALLBACK_IMAGE = '/images/logo.png';
 const ADMIN_WHATSAPP = '6285284589556';
+const BANK_ACCOUNT_NAME = 'Mochammad Fadry Anom';
 const SITE_URL = (process.env.SITE_URL || 'https://mahiraflowers.id').replace(/\/$/, '');
 
 function localizeProducts(products, lang) {
@@ -86,6 +87,27 @@ async function saveProductImage(file) {
   return `/images/products/${filename}`;
 }
 
+// Upload gambar kategori (max 5MB, dikompres otomatis jika lebih besar)
+const categoryUploadDir = path.join(__dirname, 'public/images/categories');
+if (!fs.existsSync(categoryUploadDir)) {
+  fs.mkdirSync(categoryUploadDir, { recursive: true });
+}
+const categoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Hanya file gambar yang diperbolehkan!'));
+  }
+});
+async function saveCategoryImage(file) {
+  const buffer = await compressImage(file);
+  if (!buffer) return null;
+  const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
+  await fs.promises.writeFile(path.join(categoryUploadDir, filename), buffer);
+  return `/images/categories/${filename}`;
+}
+
 // ==========================================
 // KONFIGURASI EMAIL (NODEMAILER)
 // ==========================================
@@ -147,6 +169,7 @@ app.get('/favorites', (req, res) => res.sendFile(path.join(__dirname, 'views', '
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'views', 'register.html')));
 app.get('/category/:slug', (req, res) => res.sendFile(path.join(__dirname, 'views', 'category.html')));
+app.get('/products', (req, res) => res.sendFile(path.join(__dirname, 'views', 'products.html')));
 
 // ==========================================
 // SEO: robots.txt & sitemap.xml (dinamis, ikut produk + kategori terbaru)
@@ -294,16 +317,18 @@ app.put('/api/admin/profile', authenticate, requireAdmin, async (req, res) => {
 
 app.get('/api/products/search', async (req, res) => {
   const term = String(req.query.q || '').trim();
+  const categorySlug = String(req.query.category || '').trim();
   try {
     const like = `%${term}%`;
     const [products] = await db.query(`
-      SELECT p.*, c.name AS category_name, COALESCE(pi.image_url, ?) AS image_url,
+      SELECT p.*, c.name AS category_name, c.slug AS category_slug, COALESCE(pi.image_url, ?) AS image_url,
         COALESCE(ROUND((SELECT AVG(r.rating) FROM reviews r WHERE r.product_id = p.id), 1), 0) AS average_rating,
         (SELECT COUNT(*) FROM reviews r WHERE r.product_id = p.id) AS review_count
       FROM products p LEFT JOIN categories c ON c.id = p.category_id
       LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
       WHERE p.is_active = TRUE AND (? = '' OR p.name LIKE ? OR p.description LIKE ? OR c.name LIKE ?)
-      ORDER BY p.created_at DESC`, [FALLBACK_IMAGE, term, like, like, like]);
+        AND (? = '' OR c.slug = ?)
+      ORDER BY p.created_at DESC`, [FALLBACK_IMAGE, term, like, like, like, categorySlug, categorySlug]);
     res.json({ success: true, data: localizeProducts(products, req.query.lang), query: term });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Gagal mencari produk' });
@@ -416,6 +441,22 @@ setInterval(() => {
   db.query('DELETE FROM vouchers WHERE expires_at <= NOW()').catch(error => console.error('Gagal membersihkan voucher:', error.message));
 }, 60 * 1000);
 
+// Pastikan 5 kategori inti selalu tersedia untuk sidebar kategori di /products
+const DEFAULT_CATEGORIES = [
+  { name: 'Jenis Bunga', slug: 'jenis-bunga' },
+  { name: 'Daun', slug: 'daun' },
+  { name: 'Hampers', slug: 'hampers' },
+  { name: 'Wedding Property', slug: 'wedding-property' },
+  { name: 'Lainnya', slug: 'lainnya' }
+];
+(async () => {
+  for (const cat of DEFAULT_CATEGORIES) {
+    try {
+      await db.query('INSERT IGNORE INTO categories (name, slug) VALUES (?, ?)', [cat.name, cat.slug]);
+    } catch (error) { console.error('Gagal menyiapkan kategori default:', error.message); }
+  }
+})();
+
 for (const statement of [
   "ALTER TABLE products ADD COLUMN name_en VARCHAR(150) NULL",
   "ALTER TABLE products ADD COLUMN description_en TEXT NULL",
@@ -432,6 +473,28 @@ for (const statement of [
 ]) {
   db.query(statement).catch(error => { if (!['ER_DUP_FIELDNAME', 'ER_DUP_COLUMN'].includes(error.code)) console.error('Schema update:', error.message); });
 }
+
+// Kategori tetap toko: Jenis Bunga, Daun, Hampers, Wedding Property, Lainnya.
+// Otomatis dibuat kalau belum ada, supaya sidebar kategori di halaman produk selalu punya isi.
+const FIXED_STORE_CATEGORIES = [
+  { name: 'Jenis Bunga', slug: 'jenis-bunga' },
+  { name: 'Daun', slug: 'daun' },
+  { name: 'Hampers', slug: 'hampers' },
+  { name: 'Wedding Property', slug: 'wedding-property' },
+  { name: 'Lainnya', slug: 'lainnya' }
+];
+(async () => {
+  try {
+    for (const category of FIXED_STORE_CATEGORIES) {
+      await db.query(
+        'INSERT INTO categories (name, slug) SELECT ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM categories WHERE slug = ?)',
+        [category.name, category.slug, category.slug]
+      );
+    }
+  } catch (error) {
+    console.error('Gagal menyiapkan kategori tetap:', error.message);
+  }
+})();
 
 // ==========================================
 // SKEMA PEMBAYARAN QRIS STATIS (kode unik)
@@ -566,13 +629,15 @@ async function createOrder(body) {
 
     const [[qrisSetting]] = await db.query(`SELECT setting_value FROM site_settings WHERE setting_key = 'qris_image'`).catch(() => [[null]]);
     const productLines = items.map(i => `- ${productMap.get(i.product_id).name} x${i.quantity}`).join('\n');
-    const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya sudah transfer QRIS untuk pesanan berikut.
+    const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya ingin konfirmasi pesanan berikut.
 
 Nomor pesanan: ${orderNumber}
 ${productLines}
-Total dibayar: Rp ${paymentAmount.toLocaleString('id-ID')} (termasuk kode unik ${uniqueCode})
+Total: Rp ${totalAmount.toLocaleString('id-ID')}
 Nama: ${sender_name}
-No. HP: ${sender_phone}`);
+No. HP: ${sender_phone}
+
+Saya akan melakukan transfer ke rekening a.n. ${BANK_ACCOUNT_NAME}.`);
 
     return {
       status: 201,
@@ -584,6 +649,7 @@ No. HP: ${sender_phone}`);
         unique_code: uniqueCode,
         payment_amount: paymentAmount,
         qris_image: qrisSetting?.setting_value || null,
+        bank_account_name: BANK_ACCOUNT_NAME,
         whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappText}`
       }
     };
@@ -642,13 +708,15 @@ app.get('/api/orders/:orderNumber/payment', async (req, res) => {
   );
   const [[qrisSetting]] = await db.query(`SELECT setting_value FROM site_settings WHERE setting_key = 'qris_image'`).catch(() => [[null]]);
   const productLines = items.map(i => `- ${i.name} x${i.quantity}`).join('\n');
-  const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya sudah transfer QRIS untuk pesanan berikut.
+  const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya ingin konfirmasi pesanan berikut.
 
 Nomor pesanan: ${order.order_number}
 ${productLines}
-Total dibayar: Rp ${Number(order.payment_amount).toLocaleString('id-ID')} (termasuk kode unik ${order.unique_code})
+Total: Rp ${Number(order.total_amount).toLocaleString('id-ID')}
 Nama: ${order.sender_name}
-No. HP: ${order.sender_phone}`);
+No. HP: ${order.sender_phone}
+
+Saya akan melakukan transfer ke rekening a.n. ${BANK_ACCOUNT_NAME}.`);
   res.json({
     success: true,
     data: {
@@ -659,6 +727,7 @@ No. HP: ${order.sender_phone}`);
       unique_code: order.unique_code,
       items,
       qris_image: qrisSetting?.setting_value || null,
+      bank_account_name: BANK_ACCOUNT_NAME,
       whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappText}`,
       admin_whatsapp: ADMIN_WHATSAPP
     }
@@ -856,30 +925,38 @@ app.get('/api/categories/:slug', async (req, res) => {
   }
 });
 
-app.post('/api/admin/categories', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const name = String(req.body.name || '').trim();
-    if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
-    const imageUrl = String(req.body.image_url || '').trim() || null;
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    await db.query('INSERT INTO categories (name, slug, image_url) VALUES (?, ?, ?)', [name, slug, imageUrl]);
-    res.status(201).json({ success: true, message: 'Kategori ditambahkan!' });
-  } catch (error) {
-    res.status(400).json({ success: false, message: 'Kategori sudah ada atau tidak valid' });
-  }
+app.post('/api/admin/categories', authenticate, requireAdmin, (req, res) => {
+  categoryUpload.single('image')(req, res, async (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+    try {
+      const name = String(req.body.name || '').trim();
+      if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
+      const uploadedUrl = req.file ? await saveCategoryImage(req.file) : null;
+      const imageUrl = uploadedUrl || String(req.body.image_url || '').trim() || null;
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      await db.query('INSERT INTO categories (name, slug, image_url) VALUES (?, ?, ?)', [name, slug, imageUrl]);
+      res.status(201).json({ success: true, message: 'Kategori ditambahkan!' });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message || 'Kategori sudah ada atau tidak valid' });
+    }
+  });
 });
 
-app.put('/api/admin/categories/:id', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const name = String(req.body.name || '').trim();
-    if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
-    const imageUrl = String(req.body.image_url || '').trim() || null;
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    await db.query('UPDATE categories SET name = ?, slug = ?, image_url = ? WHERE id = ?', [name, slug, imageUrl, req.params.id]);
-    res.json({ success: true, message: 'Kategori diperbarui!' });
-  } catch (error) {
-    res.status(400).json({ success: false, message: 'Kategori sudah ada atau tidak valid' });
-  }
+app.put('/api/admin/categories/:id', authenticate, requireAdmin, (req, res) => {
+  categoryUpload.single('image')(req, res, async (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+    try {
+      const name = String(req.body.name || '').trim();
+      if (!name) return res.status(400).json({ success: false, message: 'Nama kategori wajib diisi' });
+      const uploadedUrl = req.file ? await saveCategoryImage(req.file) : null;
+      const imageUrl = uploadedUrl || String(req.body.image_url || '').trim() || null;
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      await db.query('UPDATE categories SET name = ?, slug = ?, image_url = ? WHERE id = ?', [name, slug, imageUrl, req.params.id]);
+      res.json({ success: true, message: 'Kategori diperbarui!' });
+    } catch (error) {
+      res.status(400).json({ success: false, message: error.message || 'Kategori sudah ada atau tidak valid' });
+    }
+  });
 });
 
 app.delete('/api/admin/categories/:id', authenticate, requireAdmin, async (req, res) => {

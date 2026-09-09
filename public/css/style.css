@@ -301,7 +301,7 @@ header.main-header {
 }
 
 .logo img {
-  width: 110px;
+  width: 150px;
   margin: 0 auto;
 }
 
@@ -1741,7 +1741,7 @@ footer .btn:hover {
   }
 
   .logo img {
-    width: 96px;
+    width: 128px;
   }
 
   nav.main-nav {
@@ -2146,7 +2146,7 @@ header.main-header {
   }
 
   .main-header>.logo img {
-    width: 110px;
+    width: 150px;
     margin: 0 auto;
   }
 
@@ -2269,7 +2269,7 @@ header.main-header {
   }
 
   .main-header>.logo img {
-    width: 96px;
+    width: 130px;
   }
 
   .main-header>.header-actions {

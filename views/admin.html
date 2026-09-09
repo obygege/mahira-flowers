@@ -502,8 +502,7 @@
             <form id="categoryForm">
                 <div class="form-group"><label>Nama Kategori</label><input type="text" id="c_name" class="form-control"
                         required placeholder="Cth: Buket Wisuda"></div>
-                <div class="form-group"><label>URL Gambar</label><input type="text" id="c_image_url" class="form-control"
-                        placeholder="https://... (opsional)"></div>
+                <div class="form-group"><label>Gambar Kategori (maks 5MB, otomatis dikompres)</label><input type="file" id="c_image_file" class="form-control" accept="image/*"></div>
                 <div class="form-group"><img id="c_image_preview" src="" alt="" style="display:none;max-width:100%;max-height:120px;border-radius:8px;object-fit:cover;"></div>
                 <button type="submit" class="btn btn-dark" id="categorySubmitButton">Simpan Kategori</button>
             </form>
@@ -828,7 +827,7 @@
         function openCategoryModal(category = null) {
             document.getElementById('c_id').value = category?.id || '';
             document.getElementById('c_name').value = category?.name || '';
-            document.getElementById('c_image_url').value = category?.image_url || '';
+            document.getElementById('c_image_file').value = '';
             const preview = document.getElementById('c_image_preview');
             preview.src = category?.image_url || '';
             preview.style.display = category?.image_url ? '' : 'none';
@@ -865,20 +864,29 @@
         function openProductModalById(id) { openProductModal(globalProducts.find(product => product.id === id)); }
 
         // --- FITUR FORM SUBMIT ---
-        document.getElementById('c_image_url').addEventListener('input', (e) => {
+        document.getElementById('c_image_file').addEventListener('change', (e) => {
             const preview = document.getElementById('c_image_preview');
-            preview.src = e.target.value.trim();
-            preview.style.display = e.target.value.trim() ? '' : 'none';
+            const file = e.target.files[0];
+            if (!file) { preview.style.display = 'none'; return; }
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
         });
         document.getElementById('categoryForm').onsubmit = async (e) => {
             e.preventDefault();
             const categoryId = document.getElementById('c_id').value;
-            const data = await authFetch(categoryId ? `/api/admin/categories/${categoryId}` : '/api/admin/categories', {
-                method: categoryId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: document.getElementById('c_name').value.trim(), image_url: document.getElementById('c_image_url').value.trim() })
+            const fileInput = document.getElementById('c_image_file');
+            const formData = new FormData();
+            formData.append('name', document.getElementById('c_name').value.trim());
+            if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
+            const token = localStorage.getItem('token');
+            const res = await fetch(categoryId ? `/api/admin/categories/${categoryId}` : '/api/admin/categories', {
+                method: categoryId ? 'PUT' : 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }, // FormData tidak butuh Header Content-Type
+                body: formData
             });
+            const data = await res.json();
             alert(data.message);
-            if (data.success) { closeModal('categoryModal'); document.getElementById('c_name').value = ''; document.getElementById('c_id').value = ''; document.getElementById('c_image_url').value = ''; loadCategories(); }
+            if (data.success) { closeModal('categoryModal'); document.getElementById('c_name').value = ''; document.getElementById('c_id').value = ''; fileInput.value = ''; document.getElementById('c_image_preview').style.display = 'none'; loadCategories(); }
         };
 
         document.getElementById('voucherModal').addEventListener('click', prepareVoucherProducts, { once: true });

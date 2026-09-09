@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Semua Produk - Mahira Flowers</title><meta name="description" content="Jelajahi seluruh koleksi bunga Mahira Flowers berdasarkan kategori: jenis bunga, daun, hampers, wedding property, dan lainnya.">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#8a1f2b">
+<link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="/css/toast.css">
+  <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    .shop-shell{max-width:1200px;margin:0 auto;padding:40px 24px 60px;}
+    .shop-search{display:flex;gap:10px;margin-bottom:28px;max-width:480px}
+    .shop-search input{flex:1}
+    .shop-layout{display:grid;grid-template-columns:230px 1fr;gap:32px;align-items:start}
+    .shop-sidebar{position:sticky;top:20px;background:#fffdf8;border:1px solid var(--line);border-radius:8px;padding:22px 0;box-shadow:0 8px 18px rgba(58,42,42,.06)}
+    .shop-sidebar h2{font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--maroon);padding:0 22px 14px;margin:0;border-bottom:1px solid var(--line)}
+    .shop-cat-list{list-style:none;margin:0;padding:10px 0}
+    .shop-cat-list li{}
+    .shop-cat-list button{width:100%;text-align:left;background:none;border:0;padding:11px 22px;font:600 .88rem Montserrat,sans-serif;color:var(--text);cursor:pointer;border-left:3px solid transparent;transition:.15s}
+    .shop-cat-list button:hover{background:#fff3e2;color:var(--maroon)}
+    .shop-cat-list button.active{border-left-color:var(--coral);background:#fff3e2;color:var(--maroon)}
+    .shop-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .shop-title-row h1{margin:0;font-size:1.4rem}
+    .shop-count{font-size:.82rem;color:#8a7f6d}
+    @media(max-width:800px){
+      .shop-layout{grid-template-columns:1fr}
+      .shop-sidebar{position:static;padding:14px 0}
+      .shop-cat-list{display:flex;flex-wrap:wrap;gap:8px;padding:0 14px}
+      .shop-cat-list button{width:auto;border-left:0;border:1px solid var(--line);border-radius:20px;padding:8px 16px}
+      .shop-cat-list button.active{background:var(--maroon);color:#fff;border-color:var(--maroon)}
+    }
+  </style>
+</head>
+<body>
+<header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a><a href="/cart">Keranjang</a></nav></header>
+<main class="shop-shell">
+  <a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a>
+  <div class="page-heading" style="margin-top:14px">
+    <div><p class="eyebrow">Koleksi Mahira</p><h1>Semua Produk</h1><p class="muted">Pilih kategori di samping untuk melihat produk, atau cari langsung di sini.</p></div>
+  </div>
+
+  <form id="shopSearchForm" class="shop-search">
+    <input id="shopQuery" class="form-control" placeholder="Cari buket, flower box, hampers...">
+    <button class="btn btn-dark"><i class="fa-solid fa-magnifying-glass"></i> Cari</button>
+  </form>
+
+  <div class="shop-layout">
+    <aside class="shop-sidebar">
+      <h2>Kategori</h2>
+      <ul class="shop-cat-list" id="shopCatList">
+        <li><button type="button" class="active" data-slug="">Semua Produk</button></li>
+      </ul>
+    </aside>
+    <section>
+      <div class="shop-title-row">
+        <h1 id="shopSectionTitle">Semua Produk</h1>
+        <span class="shop-count" id="shopCount"></span>
+      </div>
+      <div id="shopResults" class="product-grid"></div>
+    </section>
+  </div>
+</main>
+<script src="/js/toast.js"></script>
+<script src="/js/chatbot.js"></script>
+<script src="/js/customer.js"></script>
+<script>
+let currentSlug = new URLSearchParams(location.search).get('category') || '';
+
+async function loadCategoriesSidebar() {
+  try {
+    const r = await fetch('/api/categories');
+    const d = await r.json();
+    const list = document.getElementById('shopCatList');
+    (d.data || []).forEach(cat => {
+      const li = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.slug = cat.slug;
+      btn.textContent = cat.name;
+      if (cat.slug === currentSlug) { btn.classList.add('active'); document.querySelector('[data-slug=""]').classList.remove('active'); }
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  } catch (e) { /* biarkan hanya "Semua Produk" jika kategori gagal dimuat */ }
+}
+
+async function loadProducts(slug) {
+  const resultsEl = document.getElementById('shopResults');
+  const titleEl = document.getElementById('shopSectionTitle');
+  const countEl = document.getElementById('shopCount');
+  resultsEl.innerHTML = '<div class="empty">Memuat produk...</div>';
+  try {
+    let data, title;
+    if (slug) {
+      const r = await fetch('/api/categories/' + encodeURIComponent(slug) + '/products?lang=' + encodeURIComponent(customerLang()));
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.message);
+      data = d.data; title = d.category.name;
+    } else {
+      const r = await fetch('/api/products?lang=' + encodeURIComponent(customerLang()));
+      const d = await r.json();
+      data = d.data; title = 'Semua Produk';
+    }
+    titleEl.textContent = title;
+    countEl.textContent = (data || []).length + ' produk';
+    resultsEl.innerHTML = (data || []).map(p => productCard(p)).join('') || '<div class="empty">Belum ada produk pada kategori ini.</div>';
+  } catch (e) {
+    resultsEl.innerHTML = '<div class="empty">' + safe(e.message || 'Gagal memuat produk') + '</div>';
+  }
+}
+
+document.getElementById('shopCatList').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-slug]');
+  if (!btn) return;
+  document.querySelectorAll('#shopCatList button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentSlug = btn.dataset.slug;
+  const url = new URL(location.href);
+  if (currentSlug) url.searchParams.set('category', currentSlug); else url.searchParams.delete('category');
+  history.replaceState(null, '', url);
+  loadProducts(currentSlug);
+});
+
+document.getElementById('shopSearchForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = document.getElementById('shopQuery').value.trim();
+  if (q) location.href = '/search?q=' + encodeURIComponent(q);
+});
+
+(async function init() {
+  await loadCategoriesSidebar();
+  loadProducts(currentSlug);
+})();
+document.addEventListener('mahira-lang-changed', () => loadProducts(currentSlug));
+</script>
+</body></html>

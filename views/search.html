@@ -12,12 +12,106 @@
 <link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="/css/toast.css">
   <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<style>
+.search-shell{display:grid;grid-template-columns:250px 1fr;gap:32px;align-items:start}
+.search-sidebar{background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:10px;position:sticky;top:20px;box-shadow:0 8px 18px rgba(58,42,42,.06)}
+.search-sidebar h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:var(--maroon);padding:12px 14px 8px;margin:0}
+.search-sidebar button{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:7px;font-weight:600;font-size:.95rem;color:var(--text);border:0;border-left:3px solid transparent;background:transparent;cursor:pointer;font-family:inherit}
+.search-sidebar button:hover{background:#fff2df;color:var(--maroon)}
+.search-sidebar button.active{background:var(--maroon);color:#fff;border-left-color:var(--coral)}
+.search-main .search-form{display:flex;gap:10px;margin-bottom:20px}
+.search-main .search-form .form-control{flex:1}
+@media(max-width:800px){
+  .search-shell{grid-template-columns:1fr}
+  .search-sidebar{position:static;display:flex;overflow-x:auto;gap:4px;padding:8px}
+  .search-sidebar h2{display:none}
+  .search-sidebar button{white-space:nowrap;width:auto}
+}
+</style>
 </head>
 <body>
 <header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a></nav></header>
-<main class="page-shell"><a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a><div class="page-heading"><div><p class="eyebrow" data-i18n="search_eyebrow">Koleksi kami</p><h1 data-i18n="search_title">Cari produk</h1><p class="muted" data-i18n="search_desc">Temukan rangkaian berdasarkan nama, kategori, atau deskripsi.</p></div></div>
-<form id="searchForm" class="result-panel search-form"><input id="query" class="form-control" data-i18n-placeholder="search_placeholder" placeholder="Cari buket, flower box..." autofocus><button class="btn btn-dark"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search_btn">Cari</span></button></form><p id="message" class="muted"></p><div id="results" class="product-grid"></div></main>
+<main class="page-shell">
+  <a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a>
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow" data-i18n="search_eyebrow">Koleksi kami</p>
+      <h1 data-i18n="search_title">Cari produk</h1>
+      <p class="muted" data-i18n="search_desc">Temukan rangkaian berdasarkan nama, kategori, atau deskripsi.</p>
+    </div>
+  </div>
+
+  <div class="search-shell">
+    <aside class="search-sidebar" id="categorySidebar">
+      <h2>Kategori</h2>
+      <button type="button" class="active" data-slug="">Semua Produk</button>
+      <!-- Diisi dinamis dari /api/categories (data asli database) -->
+    </aside>
+
+    <div class="search-main">
+      <form id="searchForm" class="result-panel search-form">
+        <input id="query" class="form-control" data-i18n-placeholder="search_placeholder" placeholder="Cari buket, flower box...">
+        <button class="btn btn-dark" type="submit"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n="search_btn">Cari</span></button>
+      </form>
+      <p id="message" class="muted"></p>
+      <div id="results" class="product-grid"></div>
+    </div>
+  </div>
+</main>
 <script src="/js/toast.js"></script>
 <script src="/js/chatbot.js"></script>
-<script src="/js/customer.js"></script><script>const queryParams=new URLSearchParams(location.search);document.getElementById('query').value=queryParams.get('q')||'';async function search(){const q=document.getElementById('query').value.trim();const r=await fetch('/api/products/search?lang='+encodeURIComponent(customerLang())+'&q='+encodeURIComponent(q));const d=await r.json();const dict=customerTranslations[customerLang()];document.getElementById('message').textContent=`${d.data?.length||0} ${dict.search_count}`;document.getElementById('results').innerHTML=d.data?.map(p=>productCard(p)).join('')||`<div class="empty">${dict.search_empty}</div>`}document.getElementById('searchForm').addEventListener('submit',e=>{e.preventDefault();search()});document.addEventListener('mahira-lang-changed',search);search();</script>
+<script src="/js/customer.js"></script>
+<script>
+let activeCategorySlug = '';
+let allCategories = [];
+
+async function loadCategories(){
+  try{
+    const r = await fetch('/api/categories');
+    const d = await r.json();
+    allCategories = d.data || [];
+    const sidebar = document.getElementById('categorySidebar');
+    const buttonsHtml = allCategories.map(c =>
+      `<button type="button" data-slug="${safe(c.slug)}">${safe(c.name)}</button>`
+    ).join('');
+    sidebar.innerHTML = '<h2>Kategori</h2><button type="button" class="active" data-slug="">Semua Produk</button>' + buttonsHtml;
+  }catch(e){ /* biarkan sidebar cuma tampil "Semua Produk" kalau kategori gagal dimuat */ }
+}
+
+function setActiveCategoryButton(slug){
+  document.querySelectorAll('#categorySidebar button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.slug === slug);
+  });
+}
+
+async function search(){
+  const q = document.getElementById('query').value.trim();
+  const r = await fetch('/api/products/search?lang=' + encodeURIComponent(customerLang()) + '&q=' + encodeURIComponent(q) + '&category=' + encodeURIComponent(activeCategorySlug));
+  const d = await r.json();
+  const dict = customerTranslations[customerLang()];
+  document.getElementById('message').textContent = `${d.data?.length || 0} ${dict.search_count}`;
+  document.getElementById('results').innerHTML = d.data?.map(p => productCard(p)).join('') || `<div class="empty">${dict.search_empty}</div>`;
+}
+
+document.getElementById('categorySidebar').addEventListener('click', e => {
+  const button = e.target.closest('button[data-slug]');
+  if (!button) return;
+  activeCategorySlug = button.dataset.slug || '';
+  setActiveCategoryButton(activeCategorySlug);
+  search();
+});
+
+const queryParams = new URLSearchParams(location.search);
+document.getElementById('query').value = queryParams.get('q') || '';
+activeCategorySlug = queryParams.get('category') || '';
+
+document.getElementById('searchForm').addEventListener('submit', e => { e.preventDefault(); search(); });
+document.addEventListener('mahira-lang-changed', search);
+
+(async function init(){
+  await loadCategories();
+  setActiveCategoryButton(activeCategorySlug);
+  search();
+})();
+</script>
 </body></html>

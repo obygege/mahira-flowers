@@ -1,0 +1,85 @@
+diff a/views/category.html b/views/category.html	(rejected hunks)
+@@ -12,11 +12,81 @@
+ <link rel="stylesheet" href="/css/customer.css"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+   <link rel="stylesheet" href="/css/toast.css">
+   <link rel="stylesheet" href="/css/chatbot.css"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
++<style>
++.category-shell{display:grid;grid-template-columns:250px 1fr;gap:32px;align-items:start}
++.category-sidebar{background:#fffdf8;border:1px solid var(--line);border-radius:10px;padding:10px;position:sticky;top:20px;box-shadow:0 8px 18px rgba(58,42,42,.06)}
++.category-sidebar h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:var(--maroon);padding:12px 14px 8px;margin:0}
++.category-sidebar a{display:block;padding:12px 14px;border-radius:7px;font-weight:600;font-size:.95rem;color:var(--text);border-left:3px solid transparent}
++.category-sidebar a:hover{background:#fff2df;color:var(--maroon)}
++.category-sidebar a.active{background:var(--maroon);color:#fff;border-left-color:var(--coral)}
++.category-main .page-heading{margin-bottom:20px}
++@media(max-width:800px){
++  .category-shell{grid-template-columns:1fr}
++  .category-sidebar{position:static;display:flex;overflow-x:auto;gap:4px;padding:8px}
++  .category-sidebar h2{display:none}
++  .category-sidebar a{white-space:nowrap}
++}
++</style>
+ </head>
+ <body>
+ <header class="customer-header"><a class="brand" href="/">Mahira Flowers</a><nav data-customer-account><a href="/">Beranda</a><a href="/search">Cari</a></nav></header>
+-<main class="page-shell"><a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a><div class="page-heading"><div><p class="eyebrow" data-i18n="category_eyebrow">Koleksi Mahira</p><h1 id="title">Kategori</h1><p class="muted" data-i18n="category_desc">Produk pilihan berdasarkan kategori dari katalog kami.</p></div></div><div id="results" class="product-grid"></div></main>
++<main class="page-shell">
++  <a class="back-link" href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a>
++  <div class="category-shell">
++    <aside class="category-sidebar" id="categorySidebar">
++      <h2>Kategori</h2>
++      <!-- Diisi dinamis berdasarkan daftar kategori tetap -->
++    </aside>
++    <div class="category-main">
++      <div class="page-heading">
++        <div>
++          <p class="eyebrow" data-i18n="category_eyebrow">Koleksi Mahira</p>
++          <h1 id="title">Kategori</h1>
++          <p class="muted" data-i18n="category_desc">Produk pilihan berdasarkan kategori dari katalog kami.</p>
++        </div>
++      </div>
++      <div id="results" class="product-grid"></div>
++    </div>
++  </div>
++</main>
+ <script src="/js/toast.js"></script>
+ <script src="/js/chatbot.js"></script>
+-<script src="/js/customer.js"></script><script>async function load(){const slug=location.pathname.split('/').pop();try{const r=await fetch('/api/categories/'+encodeURIComponent(slug)+'?lang='+encodeURIComponent(customerLang()));const d=await r.json();if(!r.ok)throw Error(d.message);document.title=d.category.name+' - Mahira Flowers';document.getElementById('title').textContent=d.category.name;document.getElementById('results').innerHTML=d.data.map(p=>productCard(p)).join('')||`<div class="empty">${customerTranslations[customerLang()].category_empty}</div>`}catch(e){document.getElementById('results').innerHTML='<div class="empty">'+safe(e.message)+'</div>'}}document.addEventListener('mahira-lang-changed',load);load();</script>
++<script src="/js/customer.js"></script>
++<script>
++// Kategori tetap yang selalu tampil di sidebar kiri.
++// Slug harus sama persis dengan slug kategori di database/admin.
++const FIXED_CATEGORIES = [
++  { slug: 'jenis-bunga', name: 'Jenis Bunga' },
++  { slug: 'daun', name: 'Daun' },
++  { slug: 'hampers', name: 'Hampers' },
++  { slug: 'wedding-property', name: 'Wedding Property' },
++  { slug: 'lainnya', name: 'Lainnya' }
++];
++
++function renderSidebar(activeSlug){
++  const sidebar = document.getElementById('categorySidebar');
++  const links = FIXED_CATEGORIES.map(c =>
++    `<a href="/category/${c.slug}" class="${c.slug===activeSlug?'active':''}">${c.name}</a>`
++  ).join('');
++  sidebar.innerHTML = '<h2>Kategori</h2>' + links;
++}
++
++async function load(){
++  const slug = location.pathname.split('/').pop();
++  renderSidebar(slug);
++  try{
++    const r = await fetch('/api/categories/'+encodeURIComponent(slug)+'?lang='+encodeURIComponent(customerLang()));
++    const d = await r.json();
++    if(!r.ok) throw Error(d.message);
++    document.title = d.category.name + ' - Mahira Flowers';
++    document.getElementById('title').textContent = d.category.name;
++    document.getElementById('results').innerHTML = d.data.map(p=>productCard(p)).join('') || `<div class="empty">${customerTranslations[customerLang()].category_empty}</div>`;
++  }catch(e){
++    document.getElementById('title').textContent = FIXED_CATEGORIES.find(c=>c.slug===slug)?.name || 'Kategori';
++    document.getElementById('results').innerHTML = '<div class="empty">'+safe(e.message)+'</div>';
++  }
++}
++document.addEventListener('mahira-lang-changed', load);
++load();
++</script>
+ </body></html>

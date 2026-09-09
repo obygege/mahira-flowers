@@ -1,0 +1,56 @@
+diff a/views/cart.html b/views/cart.html	(rejected hunks)
+@@ -65,7 +65,7 @@
+       <div class="voucher-row"><input id="c_voucherCode" class="form-control" placeholder="Masukkan kode voucher"><button type="button" class="btn btn-light" id="c_voucherCheck">Pakai</button></div>
+       <p id="c_voucherMessage" class="message"></p>
+     </div>
+-    <button type="button" class="btn wide" id="checkoutSubmit">Proceed to Order</button>
++    <button type="button" class="btn wide" id="checkoutSubmit">Pesan via WhatsApp</button>
+     <p id="checkoutStatus" class="message"></p>
+   </section>
+ </main>
+@@ -154,7 +154,6 @@ document.getElementById('c_voucherCheck').addEventListener('click', async ()=>{
+ });
+ 
+ document.getElementById('checkoutSubmit').addEventListener('click', async function(){
+-  if(!requireCustomer())return;
+   const button=this;
+   const status=document.getElementById('checkoutStatus');
+   const deliveryType=document.getElementById('c_deliveryType').value;
+@@ -171,18 +170,35 @@ document.getElementById('checkoutSubmit').addEventListener('click', async functi
+     card_message: document.getElementById('c_cardMessage').value.trim(),
+     voucher_code: appliedVoucher?.code || document.getElementById('c_voucherCode').value.trim()
+   };
++  if(!cartItems.length){
++    status.textContent='Keranjang masih kosong, tambahkan produk terlebih dahulu.';
++    return;
++  }
+   if(!payload.delivery_date||!payload.sender_name||!payload.sender_phone||(deliveryType==='delivery'&&!payload.delivery_address)){
+     status.textContent='Mohon lengkapi data pengiriman dan data pengirim terlebih dahulu.';
+     return;
+   }
+   button.disabled=true; button.textContent='Memproses...'; status.textContent='';
+   try{
+-    const result=await customerFetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
++    let result;
++    if(isGuest){
++      // Checkout tanpa login: kirim langsung item keranjang tamu + detail pengiriman.
++      // Pesanan tetap tercatat di sistem (tabel orders) walau tanpa akun.
++      payload.items = cartItems.map(i=>({ product_id: i.product_id, quantity: i.quantity }));
++      const response = await fetch('/api/orders', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
++      result = await response.json();
++      if(!response.ok || !result.success) throw new Error(result.message || 'Gagal membuat pesanan');
++      saveGuestCart([]);
++    } else {
++      result = await customerFetch('/api/cart/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
++    }
+     localStorage.removeItem('mahira_checkout_draft');
++    // Tidak ada pembayaran online di web — pesanan langsung diarahkan ke halaman konfirmasi
++    // yang berisi tombol WhatsApp (HP) dan WhatsApp Web, isi chatnya sudah otomatis lengkap.
+     location.href = `/payment/${result.order_number}`;
+   }catch(error){
+     status.textContent=error.message;
+-    button.disabled=false; button.textContent='Proceed to Order';
++    button.disabled=false; button.textContent='Pesan via WhatsApp';
+   }
+ });
+ 

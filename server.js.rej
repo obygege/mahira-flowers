@@ -1,0 +1,122 @@
+diff a/server.js b/server.js	(rejected hunks)
+@@ -15,6 +15,19 @@ const PORT = process.env.PORT || 3000;
+ const JWT_SECRET = process.env.JWT_SECRET || 'mahira-flowers-local-secret';
+ const FALLBACK_IMAGE = '/images/logo.png';
+ const ADMIN_WHATSAPP = '6285284589556';
++// Bangun link WhatsApp untuk 2 mode: wa.me (buka app WA di HP / prompt pilih WA Web di desktop)
++// dan api.whatsapp.com yang khusus dipakai untuk arahkan ke WhatsApp Web di browser desktop.
++function buildWhatsappLinks(text) {
++  return {
++    whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${text}`,
++    whatsapp_app_url: `https://api.whatsapp.com/send?phone=${ADMIN_WHATSAPP}&text=${text}`,
++    whatsapp_web_url: `https://web.whatsapp.com/send?phone=${ADMIN_WHATSAPP}&text=${text}`
++  };
++}
++// Info rekening pembayaran manual (transfer via WhatsApp, tidak ada pembayaran online di web)
++const PAYMENT_BANK_NAME = process.env.PAYMENT_BANK_NAME || 'BCA';
++const PAYMENT_BANK_NUMBER = process.env.PAYMENT_BANK_NUMBER || '-';
++const PAYMENT_BANK_HOLDER = 'Mochammad Fadry Anom';
+ const SITE_URL = (process.env.SITE_URL || 'https://mahiraflowers.id').replace(/\/$/, '');
+ 
+ function localizeProducts(products, lang) {
+@@ -433,6 +448,28 @@ for (const statement of [
+   db.query(statement).catch(error => { if (!['ER_DUP_FIELDNAME', 'ER_DUP_COLUMN'].includes(error.code)) console.error('Schema update:', error.message); });
+ }
+ 
++// Kategori tetap toko: Jenis Bunga, Daun, Hampers, Wedding Property, Lainnya.
++// Otomatis dibuat kalau belum ada, supaya sidebar kategori di halaman produk selalu punya isi.
++const FIXED_STORE_CATEGORIES = [
++  { name: 'Jenis Bunga', slug: 'jenis-bunga' },
++  { name: 'Daun', slug: 'daun' },
++  { name: 'Hampers', slug: 'hampers' },
++  { name: 'Wedding Property', slug: 'wedding-property' },
++  { name: 'Lainnya', slug: 'lainnya' }
++];
++(async () => {
++  try {
++    for (const category of FIXED_STORE_CATEGORIES) {
++      await db.query(
++        'INSERT INTO categories (name, slug) SELECT ?, ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM categories WHERE slug = ?)',
++        [category.name, category.slug, category.slug]
++      );
++    }
++  } catch (error) {
++    console.error('Gagal menyiapkan kategori tetap:', error.message);
++  }
++})();
++
+ // ==========================================
+ // SKEMA PEMBAYARAN QRIS STATIS (kode unik)
+ // ==========================================
+@@ -564,27 +601,30 @@ async function createOrder(body) {
+     }
+     await connection.commit();
+ 
+-    const [[qrisSetting]] = await db.query(`SELECT setting_value FROM site_settings WHERE setting_key = 'qris_image'`).catch(() => [[null]]);
+     const productLines = items.map(i => `- ${productMap.get(i.product_id).name} x${i.quantity}`).join('\n');
+-    const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya sudah transfer QRIS untuk pesanan berikut.
++    const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya ingin memesan.
+ 
+ Nomor pesanan: ${orderNumber}
+ ${productLines}
+-Total dibayar: Rp ${paymentAmount.toLocaleString('id-ID')} (termasuk kode unik ${uniqueCode})
++Total: Rp ${paymentAmount.toLocaleString('id-ID')}
+ Nama: ${sender_name}
+-No. HP: ${sender_phone}`);
++No. HP: ${sender_phone}
++
++Mohon info konfirmasi & pembayaran ke rekening ${PAYMENT_BANK_NAME} a.n. ${PAYMENT_BANK_HOLDER}${PAYMENT_BANK_NUMBER !== '-' ? ' No. ' + PAYMENT_BANK_NUMBER : ''}. Terima kasih.`);
+ 
+     return {
+       status: 201,
+       body: {
+         success: true,
+-        message: 'Pesanan berhasil dibuat, silakan selesaikan pembayaran QRIS',
++        message: 'Pesanan berhasil dibuat, silakan lanjutkan konfirmasi via WhatsApp',
+         order_number: orderNumber,
+         subtotal, discount, total: totalAmount,
+         unique_code: uniqueCode,
+         payment_amount: paymentAmount,
+-        qris_image: qrisSetting?.setting_value || null,
+-        whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappText}`
++        bank_name: PAYMENT_BANK_NAME,
++        bank_number: PAYMENT_BANK_NUMBER,
++        bank_holder: PAYMENT_BANK_HOLDER,
++        ...buildWhatsappLinks(whatsappText)
+       }
+     };
+   } catch (error) {
+@@ -640,15 +680,16 @@ app.get('/api/orders/:orderNumber/payment', async (req, res) => {
+     `SELECT oi.quantity, p.name FROM order_items oi JOIN products p ON p.id = oi.product_id WHERE oi.order_id = ?`,
+     [order.id]
+   );
+-  const [[qrisSetting]] = await db.query(`SELECT setting_value FROM site_settings WHERE setting_key = 'qris_image'`).catch(() => [[null]]);
+   const productLines = items.map(i => `- ${i.name} x${i.quantity}`).join('\n');
+-  const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya sudah transfer QRIS untuk pesanan berikut.
++  const whatsappText = encodeURIComponent(`Halo Mahira Flowers, saya ingin konfirmasi pesanan berikut.
+ 
+ Nomor pesanan: ${order.order_number}
+ ${productLines}
+-Total dibayar: Rp ${Number(order.payment_amount).toLocaleString('id-ID')} (termasuk kode unik ${order.unique_code})
++Total: Rp ${Number(order.payment_amount).toLocaleString('id-ID')}
+ Nama: ${order.sender_name}
+-No. HP: ${order.sender_phone}`);
++No. HP: ${order.sender_phone}
++
++Mohon info konfirmasi & pembayaran ke rekening ${PAYMENT_BANK_NAME} a.n. ${PAYMENT_BANK_HOLDER}${PAYMENT_BANK_NUMBER !== '-' ? ' No. ' + PAYMENT_BANK_NUMBER : ''}. Terima kasih.`);
+   res.json({
+     success: true,
+     data: {
+@@ -658,8 +699,10 @@ No. HP: ${order.sender_phone}`);
+       payment_amount: Number(order.payment_amount),
+       unique_code: order.unique_code,
+       items,
+-      qris_image: qrisSetting?.setting_value || null,
+-      whatsapp_url: `https://wa.me/${ADMIN_WHATSAPP}?text=${whatsappText}`,
++      bank_name: PAYMENT_BANK_NAME,
++      bank_number: PAYMENT_BANK_NUMBER,
++      bank_holder: PAYMENT_BANK_HOLDER,
++      ...buildWhatsappLinks(whatsappText),
+       admin_whatsapp: ADMIN_WHATSAPP
+     }
+   });
