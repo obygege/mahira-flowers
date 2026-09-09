@@ -427,9 +427,39 @@ app.post('/api/testimonials', async (req, res) => {
   if (!customerName) return res.status(400).json({ success: false, message: 'Nama wajib diisi' });
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, message: 'Rating harus 1 sampai 5' });
   if (!reviewText) return res.status(400).json({ success: false, message: 'Tulis testimoni terlebih dahulu' });
-  await db.query(`INSERT INTO reviews (product_id, customer_name, occasion_role, rating, review_text, is_featured)
-    VALUES (NULL, ?, ?, ?, ?, 0)`, [customerName, occasionRole || null, rating, reviewText]);
-  res.status(201).json({ success: true, message: 'Terima kasih! Testimoni kamu akan tampil setelah ditinjau admin.' });
+
+  // Cek apakah user yang login (kalau ada token) sudah pernah kirim testimoni umum sebelumnya.
+  // Kalau sudah, UPDATE testimoni lama (bukan bikin baru) supaya customer bisa "edit" testimoninya sendiri.
+  let existingId = null;
+  const authHeader = req.header('Authorization') || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+  let userId = null;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      userId = decoded.id || null;
+    } catch (error) { /* token tidak valid, tetap izinkan kirim sebagai tamu */ }
+  }
+  if (userId) {
+    const [rows] = await db.query('SELECT id FROM reviews WHERE user_id = ? AND product_id IS NULL LIMIT 1', [userId]);
+    if (rows.length) existingId = rows[0].id;
+  }
+
+  if (existingId) {
+    await db.query(`UPDATE reviews SET customer_name = ?, occasion_role = ?, rating = ?, review_text = ?, is_featured = 0
+      WHERE id = ?`, [customerName, occasionRole || null, rating, reviewText, existingId]);
+    return res.json({ success: true, updated: true, message: 'Testimoni kamu berhasil diperbarui dan akan tampil lagi setelah ditinjau admin.' });
+  }
+
+  await db.query(`INSERT INTO reviews (user_id, product_id, customer_name, occasion_role, rating, review_text, is_featured)
+    VALUES (?, NULL, ?, ?, ?, ?, 0)`, [userId, customerName, occasionRole || null, rating, reviewText]);
+  res.status(201).json({ success: true, updated: false, message: 'Terima kasih! Testimoni kamu akan tampil setelah ditinjau admin.' });
+});
+
+// Ambil testimoni umum milik customer yang sedang login, buat prefill form (mode edit)
+app.get('/api/testimonials/mine', authenticate, requireCustomer, async (req, res) => {
+  const [rows] = await db.query('SELECT id, customer_name, occasion_role, rating, review_text, is_featured FROM reviews WHERE user_id = ? AND product_id IS NULL LIMIT 1', [req.user.id]);
+  res.json({ success: true, data: rows[0] || null });
 });
 
 app.post('/api/favorites/:productId', authenticate, requireCustomer, async (req, res) => {

@@ -422,29 +422,55 @@ async function loadDynamicTestimonials() {
   }
 }
 
-// Kirim form testimoni baru dari pengunjung
-function initTestimonialForm() {
+// Kirim / edit testimoni. Kalau customer login, form otomatis keisi testimoni lama dia (mode edit).
+async function initTestimonialForm() {
   const form = document.querySelector('#testimonialForm');
   const msg = document.querySelector('#testiFormMsg');
+  const nameField = document.querySelector('#testiName');
+  const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
   if (!form) return;
+
+  const token = localStorage.getItem('customer_token');
+  const user = JSON.parse(localStorage.getItem('customer_user') || 'null');
+
+  if (token && user) {
+    // Customer login: kunci field nama pakai nama akun, dan cek apakah dia sudah pernah kirim testimoni
+    nameField.value = user.name || '';
+    nameField.readOnly = true;
+    try {
+      const res = await fetch('/api/testimonials/mine', { headers: { Authorization: `Bearer ${token}` } });
+      const json = await res.json();
+      if (json.success && json.data) {
+        document.querySelector('#testiRole').value = json.data.occasion_role || '';
+        document.querySelector('#testiRating').value = json.data.rating;
+        document.querySelector('#testiText').value = json.data.review_text;
+        if (submitBtn) submitBtn.textContent = 'Update Testimoni';
+        msg.style.color = '#555';
+        msg.textContent = json.data.is_featured
+          ? 'Testimoni kamu sedang tayang. Ubah & kirim untuk memperbarui.'
+          : 'Testimoni kamu tersimpan dan sedang ditinjau admin. Ubah & kirim untuk memperbarui.';
+      }
+    } catch (error) { console.error('Gagal ambil testimoni sendiri:', error.message); }
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const payload = {
-      customer_name: document.querySelector('#testiName').value.trim(),
+      customer_name: nameField.value.trim(),
       occasion_role: document.querySelector('#testiRole').value.trim(),
       rating: Number(document.querySelector('#testiRating').value),
       review_text: document.querySelector('#testiText').value.trim()
     };
     try {
-      const res = await fetch('/api/testimonials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch('/api/testimonials', { method: 'POST', headers, body: JSON.stringify(payload) });
       const json = await res.json();
       msg.style.color = json.success ? 'green' : 'crimson';
       msg.textContent = json.message;
-      if (json.success) form.reset();
+      if (json.success && submitBtn) submitBtn.textContent = 'Update Testimoni';
+      if (json.success && !token) form.reset();
+      if (json.success) loadDynamicTestimonials();
     } catch (error) {
       msg.style.color = 'crimson';
       msg.textContent = 'Gagal mengirim testimoni, coba lagi.';
