@@ -401,12 +401,65 @@ function initTopbarActions() {
   });
 }
 
+// Ambil testimoni dinamis (yang sudah di-approve admin) dan tampilkan di homepage
+async function loadDynamicTestimonials() {
+  const container = document.querySelector('#dynamicTestimonials');
+  if (!container) return;
+  try {
+    const res = await fetch('/api/testimonials');
+    const json = await res.json();
+    if (!json.success || !json.data.length) return;
+    container.innerHTML = json.data.map(t => `
+      <div class="testimonial">
+        <div class="stars">${'<i class="fa-solid fa-star"></i>'.repeat(t.rating)}${'<i class="fa-regular fa-star"></i>'.repeat(5 - t.rating)}</div>
+        <p class="quote">"${String(t.review_text).replace(/</g, '&lt;')}"</p>
+        <div class="name">${String(t.customer_name).replace(/</g, '&lt;')}</div>
+        ${t.occasion_role ? `<div class="role">${String(t.occasion_role).replace(/</g, '&lt;')}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (error) {
+    console.error('Gagal memuat testimoni:', error.message);
+  }
+}
+
+// Kirim form testimoni baru dari pengunjung
+function initTestimonialForm() {
+  const form = document.querySelector('#testimonialForm');
+  const msg = document.querySelector('#testiFormMsg');
+  if (!form) return;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      customer_name: document.querySelector('#testiName').value.trim(),
+      occasion_role: document.querySelector('#testiRole').value.trim(),
+      rating: Number(document.querySelector('#testiRating').value),
+      review_text: document.querySelector('#testiText').value.trim()
+    };
+    try {
+      const res = await fetch('/api/testimonials', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      msg.style.color = json.success ? 'green' : 'crimson';
+      msg.textContent = json.message;
+      if (json.success) form.reset();
+    } catch (error) {
+      msg.style.color = 'crimson';
+      msg.textContent = 'Gagal mengirim testimoni, coba lagi.';
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initLanguageSwitch();
   loadCategories();
   initCategoryDropdown();
   initTopbarActions();
   initAccountState();
+  loadDynamicTestimonials();
+  initTestimonialForm();
 
   const deliveryType = document.querySelector('#deliveryType');
   const deliveryFields = document.querySelector('#deliveryFields');

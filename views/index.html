@@ -305,6 +305,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="role" data-i18n="role3">Weekly Subscription</div>
       </div>
     </div>
+    <div id="dynamicTestimonials" class="testimonials" style="margin-top:1.5rem;"></div>
+
+    <div class="testimonial-form-wrap" style="max-width:520px;margin:2.5rem auto 0;">
+      <h3 data-i18n="testi_form_title" style="text-align:center;margin-bottom:1rem;">Bagikan Pengalaman Kamu</h3>
+      <form id="testimonialForm">
+        <div style="margin-bottom:.75rem;">
+          <input type="text" id="testiName" name="customer_name" placeholder="Nama kamu" required
+            style="width:100%;padding:.6rem .8rem;border:1px solid #ddd;border-radius:6px;">
+        </div>
+        <div style="margin-bottom:.75rem;">
+          <input type="text" id="testiRole" name="occasion_role" placeholder="Untuk acara apa? (opsional)"
+            style="width:100%;padding:.6rem .8rem;border:1px solid #ddd;border-radius:6px;">
+        </div>
+        <div style="margin-bottom:.75rem;">
+          <select id="testiRating" name="rating" required style="width:100%;padding:.6rem .8rem;border:1px solid #ddd;border-radius:6px;">
+            <option value="5">5 Bintang - Sangat Puas</option>
+            <option value="4">4 Bintang - Puas</option>
+            <option value="3">3 Bintang - Cukup</option>
+            <option value="2">2 Bintang - Kurang</option>
+            <option value="1">1 Bintang - Tidak Puas</option>
+          </select>
+        </div>
+        <div style="margin-bottom:.75rem;">
+          <textarea id="testiText" name="review_text" rows="4" placeholder="Tulis testimoni kamu di sini..." required
+            style="width:100%;padding:.6rem .8rem;border:1px solid #ddd;border-radius:6px;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-dark" style="width:100%;">Kirim Testimoni</button>
+        <p id="testiFormMsg" style="text-align:center;margin-top:.75rem;font-size:.9rem;"></p>
+      </form>
+    </div>
   </section>
 
   <section class="section reveal">

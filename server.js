@@ -410,6 +410,28 @@ app.post('/api/reviews/:productId', authenticate, requireCustomer, async (req, r
   res.status(201).json({ success: true, message: 'Rating berhasil disimpan' });
 });
 
+// Testimoni umum (homepage) - product_id NULL, hanya yang is_featured=1 yang tampil publik
+app.get('/api/testimonials', async (req, res) => {
+  const [rows] = await db.query(`SELECT id, customer_name, occasion_role, rating, review_text, created_at
+    FROM reviews WHERE product_id IS NULL AND is_featured = 1 ORDER BY created_at DESC LIMIT 20`);
+  res.json({ success: true, data: rows });
+});
+
+// Kirim testimoni baru dari pengunjung (publik, tanpa login). Masuk sebagai belum tampil (is_featured=0)
+// sampai di-approve admin, supaya tidak ada spam langsung muncul di homepage.
+app.post('/api/testimonials', async (req, res) => {
+  const customerName = String(req.body.customer_name || '').trim();
+  const occasionRole = String(req.body.occasion_role || '').trim();
+  const rating = Number(req.body.rating);
+  const reviewText = String(req.body.review_text || '').trim();
+  if (!customerName) return res.status(400).json({ success: false, message: 'Nama wajib diisi' });
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) return res.status(400).json({ success: false, message: 'Rating harus 1 sampai 5' });
+  if (!reviewText) return res.status(400).json({ success: false, message: 'Tulis testimoni terlebih dahulu' });
+  await db.query(`INSERT INTO reviews (product_id, customer_name, occasion_role, rating, review_text, is_featured)
+    VALUES (NULL, ?, ?, ?, ?, 0)`, [customerName, occasionRole || null, rating, reviewText]);
+  res.status(201).json({ success: true, message: 'Terima kasih! Testimoni kamu akan tampil setelah ditinjau admin.' });
+});
+
 app.post('/api/favorites/:productId', authenticate, requireCustomer, async (req, res) => {
   const [existing] = await db.query('SELECT id FROM wishlists WHERE user_id = ? AND product_id = ?', [req.user.id, req.params.productId]);
   if (existing.length) {
@@ -420,6 +442,17 @@ app.post('/api/favorites/:productId', authenticate, requireCustomer, async (req,
   res.json({ success: true, active: true, message: 'Ditambahkan ke favorit' });
 });
 
+db.query(`CREATE TABLE IF NOT EXISTS reviews (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT DEFAULT NULL,
+  product_id INT DEFAULT NULL,
+  customer_name VARCHAR(100) NOT NULL,
+  occasion_role VARCHAR(100) DEFAULT NULL,
+  rating INT NOT NULL,
+  review_text TEXT NOT NULL,
+  is_featured TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`).catch(error => console.error('Gagal menyiapkan tabel reviews:', error.message));
 db.query(`CREATE TABLE IF NOT EXISTS vouchers (
   id INT AUTO_INCREMENT PRIMARY KEY,
   code VARCHAR(50) NOT NULL UNIQUE,
