@@ -538,13 +538,12 @@ async function initTestimonialForm() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initLanguageSwitch();
-  loadCategories();
-  initCategoryDropdown();
-  initTopbarActions();
-  initAccountState();
-  loadDynamicTestimonials();
-  initTestimonialForm();
+  // Setiap init dibungkus try/catch: kalau satu bagian error, bagian lain
+  // (termasuk render gambar produk & reveal animation) tetap jalan.
+  [initLanguageSwitch, loadCategories, initCategoryDropdown, initTopbarActions,
+    initAccountState, loadDynamicTestimonials, initTestimonialForm].forEach(fn => {
+    try { fn(); } catch (err) { console.error('[main.js init]', fn.name, err); }
+  });
 
   const deliveryType = document.querySelector('#deliveryType');
   const deliveryFields = document.querySelector('#deliveryFields');
@@ -576,16 +575,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Cart and favorite actions are handled by customer.js and persisted in MySQL.
 
-  // Scroll reveal animation
-  const revealEls = document.querySelectorAll('.reveal');
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        observer.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.15 });
+  // Scroll reveal animation (dengan fallback biar gambar/produk tidak "hilang"
+  // kalau IntersectionObserver gagal trigger di HP/tablet karena scroll cepat
+  // atau elemen lebih tinggi dari viewport).
+  try {
+    const revealEls = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.01, rootMargin: '0px 0px -10% 0px' });
 
-  revealEls.forEach(el => observer.observe(el));
+      revealEls.forEach(el => observer.observe(el));
+    } else {
+      revealEls.forEach(el => el.classList.add('visible'));
+    }
+    // Fallback: paksa tampil semua elemen reveal setelah 1.5 detik kalau ada
+    // yang belum ke-trigger observer (mis. koneksi/HP lemot), supaya konten
+    // produk tidak tampak blank/error.
+    setTimeout(() => {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'));
+    }, 1500);
+  } catch (err) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'));
+  }
 });

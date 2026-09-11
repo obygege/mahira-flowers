@@ -14,6 +14,11 @@
   box-sizing: border-box;
 }
 
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -1746,8 +1751,8 @@ footer .btn:hover {
 
 .whatsapp-float {
   position: fixed;
-  right: 1.25rem;
-  bottom: 6.25rem;
+  right: max(1.25rem, env(safe-area-inset-right));
+  bottom: calc(6.25rem + env(safe-area-inset-bottom));
   z-index: 900;
   width: 58px;
   height: 58px;
@@ -2019,11 +2024,28 @@ footer .btn:hover {
   }
 
   .whatsapp-float {
-    right: 1rem;
-    bottom: 5.5rem;
-    width: 52px;
-    height: 52px;
-    font-size: 1.6rem;
+    right: max(.85rem, env(safe-area-inset-right));
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    width: 48px;
+    height: 48px;
+    font-size: 1.4rem;
+  }
+
+  .mahira-chat-toggle {
+    right: max(.85rem, env(safe-area-inset-right)) !important;
+    bottom: calc(1rem + env(safe-area-inset-bottom)) !important;
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 1.15rem !important;
+  }
+
+  .mahira-chat-panel {
+    right: max(.5rem, env(safe-area-inset-right)) !important;
+    left: max(.5rem, env(safe-area-inset-left)) !important;
+    bottom: calc(4.75rem + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100vh - 6rem) !important;
   }
 }
 
