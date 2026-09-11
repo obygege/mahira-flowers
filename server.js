@@ -29,7 +29,7 @@ function localizeProducts(products, lang) {
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { maxAge: '30d', etag: true }));
 app.use('/api', (req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   next();
@@ -57,8 +57,8 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 async function compressImage(file) {
   if (!file) return null;
-  let width = 2400;
-  let quality = 82;
+  let width = 1280;
+  let quality = 78;
   let output;
 
   do {
