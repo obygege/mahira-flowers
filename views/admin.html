@@ -470,7 +470,7 @@
                 <div class="form-group">
                     <label>Upload Foto (Max: 5MB)</label>
                     <input type="file" id="p_image_file" class="form-control" accept="image/*">
-                    <img id="p_image_preview" class="image-preview" alt="Preview foto produk">
+                    <img id="p_image_preview" class="image-preview" alt="Preview foto produk" onerror="this.onerror=null;this.src='/images/logo.png';">
                     <p class="image-note">Gambar besar akan dikompres otomatis oleh server hingga maksimal 5 MB.</p>
                 </div>
 
@@ -787,7 +787,7 @@
             const data = await fetch(`/api/categories?_=${Date.now()}`, { cache: 'no-store' }).then(r => r.json());
             globalCategories = data.data || [];
             document.getElementById('categoryCount').innerText = globalCategories.length;
-            document.getElementById('categoryList').innerHTML = globalCategories.map(category => `<div class="category-chip">${category.image_url ? `<img src="${escapeHtml(category.image_url)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.style.display='none'">` : ''}<span>${escapeHtml(category.name)}</span><span class="chip-actions"><button class="icon-btn" title="Edit kategori" onclick="openCategoryModalById(${category.id})"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" title="Hapus kategori" onclick="deleteCategory(${category.id})"><i class="fa-solid fa-trash"></i></button></span></div>`).join('') || '<p class="muted">Belum ada kategori.</p>';
+            document.getElementById('categoryList').innerHTML = globalCategories.map(category => `<div class="category-chip">${category.image_url ? `<img src="${escapeHtml(category.image_url)}" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.onerror=null;this.src='/images/logo.png';">` : ''}<span>${escapeHtml(category.name)}</span><span class="chip-actions"><button class="icon-btn" title="Edit kategori" onclick="openCategoryModalById(${category.id})"><i class="fa-solid fa-pen"></i></button><button class="icon-btn danger" title="Hapus kategori" onclick="deleteCategory(${category.id})"><i class="fa-solid fa-trash"></i></button></span></div>`).join('') || '<p class="muted">Belum ada kategori.</p>';
 
             const btnAdd = document.getElementById('btnAddProduct');
             const selectCat = document.getElementById('p_category');
@@ -854,7 +854,14 @@
                 document.getElementById('p_desc').value = product?.description || '';
                 document.getElementById('p_desc_en').value = product?.description_en || '';
                 document.getElementById('p_image_file').value = '';
-                document.getElementById('p_image_preview').style.display = 'none';
+                const pPreview = document.getElementById('p_image_preview');
+                if (product && product.image_url) {
+                    pPreview.src = product.image_url;
+                    pPreview.style.display = 'block';
+                } else {
+                    pPreview.removeAttribute('src');
+                    pPreview.style.display = 'none';
+                }
                 document.getElementById('productModalTitle').innerText = product ? 'Edit Produk' : 'Tambah Produk Baru';
                 document.getElementById('productSubmitButton').innerText = product ? 'Update Produk' : 'Simpan Produk';
                 openModal('productModal');
