@@ -38,12 +38,27 @@ app.use('/api', (req, res, next) => {
 // ==========================================
 // KONFIGURASI UPLOAD FOTO (MULTER)
 // ==========================================
-const uploadDir = path.join(__dirname, 'public/images/products');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Semua gambar upload (produk, kategori, QRIS) DISIMPAN DI DATABASE
+// (tabel image_store, kolom LONGBLOB) — bukan ditulis ke disk server.
+// Alasannya: folder di disk server tidak ikut persisten setiap kali
+// aplikasi di-redeploy/direstart/dipindah, sedangkan database sudah
+// terbukti aman & persisten. Dengan begini gambar tidak butuh layanan
+// pihak ketiga apa pun — cukup hosting + domain yang sudah ada.
+db.query(`CREATE TABLE IF NOT EXISTS image_store (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  mime_type VARCHAR(50) NOT NULL,
+  image_data LONGBLOB NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`).catch(error => console.error('Gagal menyiapkan tabel image_store:', error.message));
+
+// Simpan buffer gambar ke database, kembalikan path publik untuk mengaksesnya
+// lewat route GET /img/:id (lihat di bawah, dekat rute /api/categories).
+async function storeImageBuffer(buffer, mimeType) {
+  const [result] = await db.query('INSERT INTO image_store (mime_type, image_data) VALUES (?, ?)', [mimeType, buffer]);
+  return `/img/${result.insertId}`;
 }
 
-// File ditampung di memory agar dapat dikompres sebelum ditulis ke disk.
+// File ditampung di memory dulu (untuk dikompres), baru disimpan ke DB.
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -82,16 +97,9 @@ async function compressImage(file) {
 async function saveProductImage(file) {
   const buffer = await compressImage(file);
   if (!buffer) return null;
-  const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
-  await fs.promises.writeFile(path.join(uploadDir, filename), buffer);
-  return `/images/products/${filename}`;
+  return storeImageBuffer(buffer, 'image/jpeg');
 }
 
-// Upload gambar kategori (max 5MB, dikompres otomatis jika lebih besar)
-const categoryUploadDir = path.join(__dirname, 'public/images/categories');
-if (!fs.existsSync(categoryUploadDir)) {
-  fs.mkdirSync(categoryUploadDir, { recursive: true });
-}
 const categoryUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
@@ -103,12 +111,11 @@ const categoryUpload = multer({
 async function saveCategoryImage(file) {
   const buffer = await compressImage(file);
   if (!buffer) return null;
-  const filename = `${Date.now()}-${Math.round(Math.random() * 1E9)}.jpg`;
-  await fs.promises.writeFile(path.join(categoryUploadDir, filename), buffer);
-  return `/images/categories/${filename}`;
+  return storeImageBuffer(buffer, 'image/jpeg');
 }
 
 // ==========================================
+
 // KONFIGURASI EMAIL (NODEMAILER)
 // ==========================================
 const transporter = nodemailer.createTransport({
@@ -184,40 +191,21 @@ app.get('/sitemap.xml', async (req, res) => {
   try {
     const staticUrls = [
       { loc: '/', priority: '1.0' },
-      { loc: '/products', priority: '0.8' },
       { loc: '/search', priority: '0.5' },
       { loc: '/login', priority: '0.3' },
       { loc: '/register', priority: '0.3' },
     ];
     const [categories] = await db.query('SELECT slug, created_at FROM categories');
-    // Ambil gambar produk per kategori supaya Google bisa index & tampilkan
-    // thumbnail produk di bawah hasil pencarian (image sitemap extension).
-    const [products] = await db.query(
-      `SELECT p.id, p.name, p.image_url, p.updated_at, c.slug AS category_slug
-       FROM products p LEFT JOIN categories c ON c.id = p.category_id
-       WHERE p.is_active = TRUE`
-    );
 
-    const absImg = (u) => !u ? null : (u.startsWith('http') ? u : `${SITE_URL}${u.startsWith('/') ? '' : '/'}${u}`);
-
-    const urlXml = (loc, lastmod, priority, images) => `  <url>\n    <loc>${SITE_URL}${loc}</loc>\n${lastmod ? `    <lastmod>${new Date(lastmod).toISOString()}</lastmod>\n` : ''}    <priority>${priority}</priority>\n${(images || []).map(img => `    <image:image>\n      <image:loc>${img.loc}</image:loc>\n      <image:title>${img.title.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</image:title>\n    </image:image>\n`).join('')}  </url>`;
-
-    // Kelompokkan gambar produk per kategori supaya muncul di <url> kategori
-    // terkait (halaman produk saat ini di-render di /category/:slug).
-    const imagesByCategory = {};
-    for (const p of products) {
-      const img = absImg(p.image_url);
-      if (!img || !p.category_slug) continue;
-      (imagesByCategory[p.category_slug] ||= []).push({ loc: img, title: p.name });
-    }
+    const urlXml = (loc, lastmod, priority) => `  <url>\n    <loc>${SITE_URL}${loc}</loc>\n${lastmod ? `    <lastmod>${new Date(lastmod).toISOString()}</lastmod>\n` : ''}    <priority>${priority}</priority>\n  </url>`;
 
     const entries = [
       ...staticUrls.map(u => urlXml(u.loc, null, u.priority)),
-      ...categories.map(c => urlXml(`/category/${c.slug}`, c.created_at, '0.7', imagesByCategory[c.slug])),
+      ...categories.map(c => urlXml(`/category/${c.slug}`, c.created_at, '0.7')),
     ];
 
     res.type('application/xml').send(
-      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${entries.join('\n')}\n</urlset>`
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join('\n')}\n</urlset>`
     );
   } catch (error) {
     res.status(500).type('text/plain').send('Gagal membuat sitemap');
@@ -626,8 +614,6 @@ const qrisUpload = multer({
     else cb(new Error('Hanya file gambar yang diperbolehkan!'));
   }
 });
-const qrisUploadDir = path.join(__dirname, 'public/images/qris');
-if (!fs.existsSync(qrisUploadDir)) fs.mkdirSync(qrisUploadDir, { recursive: true });
 
 // Menghasilkan kode unik (1-989) yang belum dipakai pesanan pending hari ini,
 // agar mutasi di QRIS statis bisa dicocokkan otomatis dengan nominalnya.
@@ -760,9 +746,8 @@ app.post('/api/admin/payment-settings/qris', authenticate, requireAdmin, (req, r
     if (err) return res.status(400).json({ success: false, message: err.message });
     if (!req.file) return res.status(400).json({ success: false, message: 'Pilih file gambar QRIS terlebih dahulu' });
     try {
-      const filename = `qris-${Date.now()}.png`;
-      await sharp(req.file.buffer).png().toFile(path.join(qrisUploadDir, filename));
-      const imageUrl = `/images/qris/${filename}`;
+      const pngBuffer = await sharp(req.file.buffer).png().toBuffer();
+      const imageUrl = await storeImageBuffer(pngBuffer, 'image/png');
       await db.query(`INSERT INTO site_settings (setting_key, setting_value) VALUES ('qris_image', ?)
         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`, [imageUrl]);
       res.json({ success: true, message: 'Gambar QRIS berhasil disimpan', qris_image: imageUrl });
@@ -978,6 +963,20 @@ ${catalogContext}
   } catch (error) {
     console.error('Gagal memproses chatbot:', error.message);
     res.status(500).json({ success: false, message: 'Terjadi kesalahan pada chatbot' });
+  }
+});
+
+// Menyajikan gambar yang tersimpan di database (produk, kategori, QRIS).
+// Contoh: <img src="/img/42">. Kalau ID tidak ditemukan, fallback ke logo.
+app.get('/img/:id', async (req, res) => {
+  try {
+    const [[row]] = await db.query('SELECT mime_type, image_data FROM image_store WHERE id = ?', [req.params.id]);
+    if (!row) return res.redirect('/images/logo.png');
+    res.set('Content-Type', row.mime_type);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(row.image_data);
+  } catch (error) {
+    res.redirect('/images/logo.png');
   }
 });
 
