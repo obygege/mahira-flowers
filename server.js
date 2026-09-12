@@ -15,6 +15,16 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mahira-flowers-local-secret';
 const FALLBACK_IMAGE = '/images/logo.png';
 const ADMIN_WHATSAPP = '6285284589556';
+// Info toko fisik/offline (dipakai chatbot supaya tahu toko ini juga buka
+// offline, bukan cuma jualan online). Kalau alamat/jam berubah, cukup edit
+// di sini saja — sumbernya sama dengan yang ditampilkan di footer web.
+const STORE_INFO = {
+  area: 'Bali & Jakarta surrounding area (bisa datang langsung / pickup di toko)',
+  mapsLink: 'https://maps.app.goo.gl/Uq2wNTQacuM9ygUT9',
+  hours: 'Setiap hari, 09.00 - 17.00',
+  whatsapp: '0852 8458 9556',
+  email: 'admin@mahiraflowerss.com'
+};
 const BANK_ACCOUNT_NAME = 'Mochammad Fadry Anom';
 const SITE_URL = (process.env.SITE_URL || 'https://mahiraflowers.com').replace(/\/$/, '');
 
@@ -922,15 +932,25 @@ app.post('/api/chatbot', async (req, res) => {
       ...products.map(p => `- ${p.name} (${p.category_name}, Rp ${Number(p.price).toLocaleString('id-ID')}${p.badge && p.badge !== 'NONE' ? `, badge: ${p.badge}` : ''})`)
     ].join('\n');
 
-    const systemPrompt = `Kamu adalah asisten virtual toko bunga "Mahira Flowers". Tugasmu membantu calon pembeli:
+    const storeContext = [
+      `Area toko: ${STORE_INFO.area}.`,
+      `Lokasi/Google Maps: ${STORE_INFO.mapsLink}`,
+      `Jam operasional: ${STORE_INFO.hours}.`,
+      `WhatsApp: ${STORE_INFO.whatsapp}`,
+      `Email: ${STORE_INFO.email}`
+    ].join('\n');
+
+    const systemPrompt = `Kamu adalah asisten virtual toko bunga "Mahira Flowers". Toko ini punya TOKO FISIK/OFFLINE selain jualan online, jadi pelanggan bisa datang langsung, pickup, atau tanya alamat/jam buka. Tugasmu membantu calon pembeli:
 - Merekomendasikan bunga/rangkaian sesuai suasana hati, acara, budget, atau penerima yang mereka sebutkan (mis. ulang tahun, wisuda, duka cita, permintaan maaf, anniversary, pernikahan).
 - Menjawab pertanyaan umum seputar bunga (arti bunga, cara merawat bunga potong, perbedaan jenis rangkaian, dsb).
+- Menjawab pertanyaan seputar toko seperti alamat, lokasi, jam buka, dan kontak menggunakan data toko berikut (JANGAN bilang "hanya bisa pesan online" atau "tidak ada toko fisik" — toko ini MEMANG punya lokasi offline):
+${storeContext}
 - Menjawab pertanyaan random pelanggan dengan ramah selama masih pantas, lalu arahkan kembali ke topik toko jika relevan.
-- HANYA merekomendasikan produk/kategori yang benar-benar ada di katalog berikut, jangan mengarang produk atau harga:
+- HANYA merekomendasikan produk/kategori/harga yang benar-benar ada di katalog berikut, jangan mengarang produk atau harga:
 ${catalogContext}
-- Jika pelanggan ingin memesan, arahkan untuk klik produk di halaman utama / kategori terkait untuk lanjut checkout, atau hubungi admin via WhatsApp jika butuh bantuan lebih lanjut.
+- Jika pelanggan ingin memesan, sebutkan dua opsi: pesan online lewat halaman produk/kategori di web ini, ATAU datang langsung/pickup ke toko sesuai area & jam operasional di atas. Untuk bantuan lebih lanjut arahkan ke WhatsApp admin.
 - Balas dengan singkat, hangat, dan sopan (maks 4-5 kalimat). Gunakan Bahasa Indonesia jika pelanggan menulis dalam Bahasa Indonesia, atau English jika pelanggan menulis dalam English. Bahasa saat ini: ${lang === 'en' ? 'English' : 'Bahasa Indonesia'}.
-- Jangan mengarang kebijakan, harga, atau stok yang tidak ada di data di atas.`;
+- Jangan mengarang kebijakan, harga, alamat, atau stok yang tidak ada di data di atas.`;
 
     const geminiContents = [
       ...history.map(h => ({ role: h.role === 'assistant' ? 'model' : 'user', parts: [{ text: h.content }] })),
